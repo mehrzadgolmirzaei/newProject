@@ -1,0 +1,11 @@
+@font-face {
+  font-family: myFont;
+  src: url(../fonts/BYEKAn.woff) format("woff");
+}
+
+body {
+  direction: rtl !important;
+  overflow-x: hidden;
+  font-family: myFont;
+  overflow: auto;
+}

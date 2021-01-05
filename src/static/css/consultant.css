@@ -1,0 +1,12 @@
+.consultantheader {
+  width: 100%;
+  height: 150px;
+  background-color: #293a49;
+}
+
+.ttt {
+  min-width: 300px;
+  border-radius: 100px;
+  height: 40px;
+  padding: 10px;
+}
