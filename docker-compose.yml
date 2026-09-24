@@ -1,0 +1,36 @@
+# اجرای کامل روی یک سرور (VPS): وب‌سایت + PostgreSQL
+#   cp .env.example .env   ← مقادیر را پر کنید
+#   docker compose up -d --build
+#   docker compose exec web node scripts/create-admin.mjs --phone 09xxxxxxxxx --name "نام"
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: viora
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-viora}
+      POSTGRES_DB: viora
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U viora"]
+      interval: 5s
+      retries: 10
+
+  web:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://viora:${POSTGRES_PASSWORD:-viora}@db:5432/viora?schema=public
+    ports:
+      - "3000:3000"
+    volumes:
+      - media:/data
+
+volumes:
+  pgdata:
+  media:

@@ -1,0 +1,398 @@
+// ============================================================================
+//  Viora Atlas — مدل داده
+//  دیتابیس: PostgreSQL (در توسعه و production یکسان)
+//  تغییر ساختار فقط با migration:  npm run db:migrate -- --name <توضیح>
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── کاربران و دسترسی ──────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN        // مدیر: تأیید کاربران، بازبینی و انتشار موارد
+  CONTRIBUTOR  // ارائه‌دهنده: پزشکی که مدیر اجازه‌ی ثبت مورد به او داده
+  MEMBER       // عضو: مرور، پاسخ‌دادن و بحث
+}
+
+enum UserStatus {
+  PENDING    // ثبت‌نام کرده، منتظر تأیید شماره نظام توسط مدیر
+  ACTIVE
+  SUSPENDED
+}
+
+model User {
+  id              String     @id @default(cuid())
+  phone           String     @unique // 09xxxxxxxxx — شناسه‌ی ورود
+  name            String?
+  medicalNumber   String?    @unique // شماره نظام پزشکی
+  specialty       String?
+  institution     String?
+  city            String?
+  role            Role       @default(MEMBER)
+  status          UserStatus @default(PENDING)
+  // ارائه‌دهنده‌ی مورد اعتماد: موردهایش بدون بازبینی منتشر می‌شوند
+  trusted         Boolean    @default(false)
+  profileComplete Boolean    @default(false)
+  approvedAt      DateTime?
+  approvedById    String?
+  lastLoginAt     DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  sessions    Session[]
+  cases       Case[]         @relation("CaseAuthor")
+  reviewed    Case[]         @relation("CaseReviewer")
+  attempts    Attempt[]
+  comments    Comment[]
+  saved       SavedCase[]
+  annotations Annotation[]
+  auditLogs   AuditLog[]     @relation("AuditActor")
+  uploads     MediaAsset[]
+
+  @@index([status, createdAt])
+  @@index([role])
+}
+
+// نشست در دیتابیس (قابل ابطال) — کوکی فقط یک توکن تصادفی است و هش آن اینجا ذخیره می‌شود
+model Session {
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  lastSeenAt DateTime @default(now())
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// کد یک‌بارمصرف پیامکی
+model OtpCode {
+  id         String    @id @default(cuid())
+  phone      String
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  ip         String?
+  createdAt  DateTime  @default(now())
+
+  @@index([phone, createdAt])
+}
+
+// شمارنده‌ی محدودیت نرخ (ارسال پیامک، ورود، ثبت نظر…) — پنجره‌ی ثابت
+model RateLimit {
+  key         String   @id
+  count       Int      @default(0)
+  windowStart DateTime @default(now())
+}
+
+// ─── موارد (کیس‌ها) ─────────────────────────────────────────────────────────
+
+enum CaseStatus {
+  DRAFT      // پیش‌نویس ارائه‌دهنده
+  IN_REVIEW  // ارسال‌شده برای بازبینی مدیر
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CaseMode {
+  UNKNOWN   // مورد ناشناس: تشخیص تا ثبت پاسخ مخفی است
+  TEACHING  // مورد آموزشی: تشخیص از ابتدا نمایش داده می‌شود
+}
+
+enum Difficulty {
+  BASIC
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum SpecimenType {
+  BIOPSY
+  EXCISION
+  RESECTION
+  FNA
+  FLUID_CYTOLOGY
+  GYN_CYTOLOGY
+  BONE_MARROW
+  FROZEN_SECTION
+  CONSULTATION
+  OTHER
+}
+
+enum Sex {
+  FEMALE
+  MALE
+  UNSPECIFIED
+}
+
+model Case {
+  id     String @id @default(cuid())
+  // شماره‌ی ترتیبی — کد نمایشی VP-0001 و آدرس /cases/1 از روی آن ساخته می‌شود
+  number Int    @unique @default(autoincrement())
+
+  status CaseStatus @default(DRAFT)
+  mode   CaseMode   @default(UNKNOWN)
+  isDemo Boolean    @default(false) // داده‌ی نمایشی (seed) — با demo:clear پاک می‌شود
+
+  // مشخصات
+  title        String        @default("") // نحوه‌ی مراجعه، نه تشخیص
+  subspecialty String        @default("") // کلید از src/lib/taxonomy.ts
+  organ        String        @default("")
+  specimenType SpecimenType?
+  difficulty   Difficulty    @default(INTERMEDIATE)
+  patientAge   Int? // در نمایش: بالای ۸۹ ← «۹۰+»
+  patientSex   Sex           @default(UNSPECIFIED)
+  keywords     String[]      @default([])
+
+  // یافته‌ها
+  clinicalHistory String @default("")
+  imaging         String @default("")
+  gross           String @default("")
+  microscopic     String @default("")
+  molecular       String @default("")
+
+  // پرسش و پاسخ
+  question           String   @default("") // خالی ← «تشخیص شما چیست؟»
+  finalDiagnosis     String   @default("")
+  diagnosisAliases   String[] @default([]) // معادل‌های قابل‌قبول برای تطبیق خودکار پاسخ
+  showIhcBeforeAnswer Boolean @default(true)
+
+  // آموزش
+  discussion     String   @default("")
+  teachingPoints String[] @default([])
+  references     String[] @default([])
+
+  // حریم خصوصی — ارائه‌دهنده باید پیش از ارسال تأیید کند
+  deidConfirmedAt DateTime?
+
+  // گردش کار
+  authorId    String
+  author      User      @relation("CaseAuthor", fields: [authorId], references: [id])
+  reviewerId  String?
+  reviewer    User?     @relation("CaseReviewer", fields: [reviewerId], references: [id])
+  reviewNote  String?
+  submittedAt DateTime?
+  publishedAt DateTime?
+  featuredAt  DateTime? // «مورد هفته» — جدیدترین مقدار برنده است
+  viewCount   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  media         MediaAsset[]
+  ihc           IhcResult[]
+  differentials Differential[]
+  attempts      Attempt[]
+  comments      Comment[]
+  savedBy       SavedCase[]
+
+  @@index([status, publishedAt])
+  @@index([subspecialty, status])
+  @@index([authorId, status])
+  @@index([featuredAt])
+}
+
+// ─── تصاویر و اسلایدها ──────────────────────────────────────────────────────
+
+enum MediaKind {
+  IMAGE // عکس میکروسکوپی (JPEG/PNG/TIFF/WebP) → کاشی‌های زوم عمیق
+  WSI   // اسلاید دیجیتال کامل (SVS, NDPI, MRXS…) → کاشی با vips/OpenSlide
+  VIDEO
+}
+
+enum MediaStatus {
+  UPLOADING
+  PROCESSING
+  READY
+  FAILED
+}
+
+model MediaAsset {
+  id     String      @id @default(cuid())
+  caseId String
+  case   Case        @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  kind   MediaKind
+  status MediaStatus @default(UPLOADING)
+  order  Int         @default(0)
+
+  stain         String @default("") // H&E، PAS، Ki-67، …
+  magnification String @default("") // ×4، ×40، …
+  caption       String @default("")
+
+  // کلیدهای فضای ذخیره‌سازی (نه آدرس کامل؛ آدرس از روی درایور ساخته می‌شود)
+  sourceKey  String? // فایل خام — پس از پردازش حذف می‌شود
+  sourceExt  String? // نام اصلی فایل ذخیره نمی‌شود (ممکن است نام بیمار داشته باشد)
+  sourceSize BigInt?
+  dziKey     String? // slides/<id>/slide.dzi
+  thumbKey   String? // slides/<id>/thumb.webp
+  previewKey String? // slides/<id>/preview.webp
+  videoKey   String?
+  width      Int?
+  height     Int?
+  error      String?
+
+  uploadedById String
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  annotations Annotation[]
+
+  @@index([caseId, order])
+  @@index([status])
+}
+
+enum AnnotationShape {
+  ARROW
+  ELLIPSE
+  RECT
+}
+
+// نشانه‌گذاری روی تصویر — مختصات برحسب پیکسل تصویر اصلی
+model Annotation {
+  id       String          @id @default(cuid())
+  mediaId  String
+  media    MediaAsset      @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  shape    AnnotationShape
+  x1       Float
+  y1       Float
+  x2       Float
+  y2       Float
+  label    String          @default("")
+  // true ← فقط بعد از پاسخ نمایش داده می‌شود (نشانه‌هایی که جواب را لو می‌دهند)
+  spoiler  Boolean         @default(false)
+  authorId String
+  author   User            @relation(fields: [authorId], references: [id])
+  createdAt DateTime       @default(now())
+
+  @@index([mediaId])
+}
+
+// ─── ایمونوهیستوشیمی و تشخیص افتراقی ───────────────────────────────────────
+
+enum IhcOutcome {
+  POSITIVE
+  NEGATIVE
+  FOCAL
+  WEAK
+  EQUIVOCAL
+  LOST     // از دست رفتن بیان (مثل MMR، BAP1، SMARCB1)
+  RETAINED
+}
+
+model IhcResult {
+  id      String     @id @default(cuid())
+  caseId  String
+  case    Case       @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  marker  String
+  outcome IhcOutcome
+  pattern String     @default("") // هسته‌ای، غشایی، منتشر…
+  note    String     @default("")
+  order   Int        @default(0)
+
+  @@index([caseId, order])
+}
+
+model Differential {
+  id     String @id @default(cuid())
+  caseId String
+  case   Case   @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  name   String
+  note   String @default("") // چه چیزی به نفع / علیه این تشخیص است
+  order  Int    @default(0)
+
+  @@index([caseId, order])
+}
+
+// ─── یادگیری: پاسخ کاربران ─────────────────────────────────────────────────
+
+enum Confidence {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Attempt {
+  id         String      @id @default(cuid())
+  caseId     String
+  case       Case        @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answer     String      @default("") // خالی ← «پاسخ را نشان بده» بدون تلاش
+  normalized String      @default("") // برای گروه‌بندی آمار
+  confidence Confidence?
+  gaveUp     Boolean     @default(false)
+  autoCorrect Boolean    @default(false) // تطبیق خودکار با تشخیص نهایی و معادل‌ها
+  // نظر ارائه‌دهنده (بر تطبیق خودکار مقدم است)
+  gradedCorrect Boolean?
+  createdAt  DateTime    @default(now())
+
+  @@unique([userId, caseId])
+  @@index([caseId])
+}
+
+// ─── بحث ──────────────────────────────────────────────────────────────────
+
+enum CommentStatus {
+  VISIBLE
+  HIDDEN  // پنهان‌شده توسط ناظر
+  DELETED // حذف‌شده توسط نویسنده (برای حفظ رشته‌ی پاسخ‌ها)
+}
+
+model Comment {
+  id       String        @id @default(cuid())
+  caseId   String
+  case     Case          @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User          @relation(fields: [authorId], references: [id])
+  parentId String?
+  parent   Comment?      @relation("Thread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Comment[]     @relation("Thread")
+  body     String
+  status   CommentStatus @default(VISIBLE)
+  // «نکته‌ی آموزشی» — سنجاق‌شده توسط ارائه‌دهنده یا مدیر
+  pinned   Boolean       @default(false)
+  editedAt DateTime?
+  createdAt DateTime     @default(now())
+
+  @@index([caseId, createdAt])
+  @@index([parentId])
+}
+
+model SavedCase {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  caseId    String
+  case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, caseId])
+}
+
+// ─── گزارش رویدادها ───────────────────────────────────────────────────────
+
+model AuditLog {
+  id       String   @id @default(cuid())
+  actorId  String?
+  actor    User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  action   String   // user.approve، case.publish، comment.hide، …
+  entity   String   // User، Case، Comment، …
+  entityId String?
+  meta     Json?
+  ip       String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entity, entityId])
+}
