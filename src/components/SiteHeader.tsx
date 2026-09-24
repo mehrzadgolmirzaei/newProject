@@ -8,9 +8,13 @@ import { Icon } from "./Icon";
 import { NavLinks } from "./NavLinks";
 import { Dropdown } from "./Dropdown";
 import { SITE } from "@/lib/site";
+import { cookies } from "next/headers";
+import { THEME_COOKIE, parseTheme } from "@/lib/theme";
+import { ThemeToggle } from "./ThemeToggle";
 
 export async function SiteHeader() {
   const user = await getUser();
+  const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
   const pendingReview = isAdmin(user)
     ? (await db.case.count({ where: { status: "IN_REVIEW" } })) + (await db.user.count({ where: { status: "PENDING", profileComplete: true } }))
     : 0;
@@ -27,6 +31,7 @@ export async function SiteHeader() {
 
         <NavLinks
           links={[
+            { href: "/", label: "خانه" },
             { href: "/cases", label: "کتابخانه‌ی موارد" },
             { href: "/subspecialties", label: "زیرتخصص‌ها" },
             { href: "/contributors", label: "ارائه‌دهندگان" },
@@ -45,12 +50,15 @@ export async function SiteHeader() {
         </Link>
         <div className="mobile-only">
           <Dropdown summary={<span className="btn btn-ghost btn-icon" aria-label="منو"><Icon name="menu" /></span>}>
+            <Link href="/"><Icon name="home" size={17} /> خانه</Link>
             <Link href="/cases"><Icon name="microscope" size={17} /> کتابخانه‌ی موارد</Link>
             <Link href="/subspecialties"><Icon name="grid" size={17} /> زیرتخصص‌ها</Link>
             <Link href="/contributors"><Icon name="users" size={17} /> ارائه‌دهندگان</Link>
             <Link href="/about"><Icon name="info" size={17} /> درباره</Link>
           </Dropdown>
         </div>
+
+        <ThemeToggle initial={theme} />
 
         {user ? (
           <Dropdown

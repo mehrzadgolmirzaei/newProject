@@ -56,6 +56,12 @@ try {
     create: { ...where, ...base, ...creds, name: name ?? null, profileComplete: !!name },
   });
   console.log(`✓ ${u.username ?? u.phone} اکنون مدیر است.${u.profileComplete ? "" : " پس از نخستین ورود، پروفایل را تکمیل کنید."}`);
+} catch (e) {
+  const msg = String(e?.message ?? e);
+  if (/Can't reach database|P1001/.test(msg)) console.error("✗ اتصال به دیتابیس ممکن نشد. سرویس PostgreSQL روشن است و DATABASE_URL در .env درست است؟");
+  else if (/Authentication failed|P1000/.test(msg)) console.error("✗ نام کاربری یا رمز دیتابیس در DATABASE_URL (فایل .env) صحیح نیست.");
+  else console.error("✗ خطا:", msg);
+  process.exitCode = 1;
 } finally {
   await db.$disconnect();
 }

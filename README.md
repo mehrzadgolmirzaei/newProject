@@ -47,6 +47,11 @@ npm run db:seed
 npm run dev                           # http://localhost:3000
 ```
 
+**ساخت حساب مدیر** (یا ارتقای حساب موجود به مدیر و تعیین رمز جدید):
+```bash
+npm run admin:create -- --username mehrzad --password "رمز-دلخواه" --name "نام شما"
+```
+
 **حساب‌های نمایشی** (رمز عبور همه: `viora1234`):
 
 | نام کاربری | نقش |

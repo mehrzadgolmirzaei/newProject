@@ -18,7 +18,7 @@
     "db:studio": "prisma studio",
     "db:seed": "node --env-file=.env --conditions=react-server --import tsx prisma/seed.ts",
     "demo:clear": "node --env-file=.env --conditions=react-server --import tsx scripts/demo-clear.ts",
-    "admin:create": "node scripts/create-admin.mjs",
+    "admin:create": "node --env-file-if-exists=.env scripts/create-admin.mjs",
     "media:reprocess": "node --env-file=.env --conditions=react-server --import tsx scripts/reprocess-media.ts"
   },
   "dependencies": {

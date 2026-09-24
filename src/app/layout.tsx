@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { cookies } from "next/headers";
+import { THEME_COOKIE, parseTheme } from "@/lib/theme";
 import "@fontsource-variable/vazirmatn";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -16,16 +18,18 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
 };
 
-export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#161a22" },
-  ],
-};
+async function currentTheme() {
+  return parseTheme((await cookies()).get(THEME_COOKIE)?.value);
+}
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export async function generateViewport(): Promise<Viewport> {
+  return { themeColor: (await currentTheme()) === "dark" ? "#0a0d18" : "#ffffff" };
+}
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const theme = await currentTheme();
   return (
-    <html lang="fa" dir="rtl">
+    <html lang="fa" dir="rtl" data-theme={theme}>
       <body>
         <Motion />
         <a href="#main" className="sr-only">رفتن به محتوای اصلی</a>
