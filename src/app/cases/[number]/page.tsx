@@ -116,7 +116,7 @@ export default async function CasePage({ params }: Params) {
 
       <header className="case-head">
         <nav className="crumbs" aria-label="مسیر">
-          <Link href="/cases">اطلس</Link>
+          <Link href="/cases">کتابخانه</Link>
           <Icon name="chevronLeft" />
           <Link href={`/cases?sub=${c.subspecialty}`}>{subspecialtyFa(c.subspecialty)}</Link>
           <Icon name="chevronLeft" />
@@ -329,9 +329,9 @@ export default async function CasePage({ params }: Params) {
           <div className="section-head">
             <div><h2>موارد دیگر</h2></div>
             <div className="spacer" />
-            <Link href="/cases" className="link">اطلس موارد</Link>
+            <Link href="/cases" className="link">کتابخانه‌ی موارد</Link>
           </div>
-          <div className="case-grid">{more.map((m) => <CaseCard key={m.id} c={m} />)}</div>
+          <div className="case-grid">{more.map((m, i) => <div key={m.id} data-reveal style={{ "--i": i % 3 } as React.CSSProperties}><CaseCard c={m} /></div>)}</div>
         </section>
       )}
     </div>

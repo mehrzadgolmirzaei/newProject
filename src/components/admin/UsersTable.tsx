@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { setTrusted, setUserRole, setUserStatus } from "@/actions/admin";
+import { resetPassword, setTrusted, setUserRole, setUserStatus } from "@/actions/admin";
 import { ROLE, USER_STATUS } from "@/lib/taxonomy";
 import { faDigits, initials } from "@/lib/text";
 import { faDate, timeAgo } from "@/lib/format";
@@ -10,7 +10,7 @@ import { Icon } from "../Icon";
 import { Empty } from "../Empty";
 
 type U = {
-  id: string; name: string | null; phone: string; medicalNumber: string | null; specialty: string | null; institution: string | null; city: string | null;
+  id: string; name: string | null; username: string | null; phone: string | null; medicalNumber: string | null; specialty: string | null; institution: string | null; city: string | null;
   role: "ADMIN" | "CONTRIBUTOR" | "MEMBER"; status: "PENDING" | "ACTIVE" | "SUSPENDED"; trusted: boolean; profileComplete: boolean;
   createdAt: Date; lastLoginAt: Date | null; cases: number; attempts: number; comments: number;
 };
@@ -45,7 +45,7 @@ export function UsersTable({ users, meId }: { users: U[]; meId: string }) {
                   <div>
                     <div className="cell-title">{u.name ?? <span className="muted">پروفایل تکمیل نشده</span>}</div>
                     <div className="cell-sub">{[u.specialty, u.institution, u.city].filter(Boolean).join(" · ")}</div>
-                    <div className="cell-sub ltr" style={{ textAlign: "right" }}>{faDigits(u.phone)}</div>
+                    <div className="cell-sub ltr" style={{ textAlign: "right" }}>{u.username ? `@${u.username}` : u.phone ? faDigits(u.phone) : ""}</div>
                   </div>
                 </div>
               </td>
@@ -81,8 +81,16 @@ export function UsersTable({ users, meId }: { users: U[]; meId: string }) {
                       </button>
                     )}
                     {u.status !== "SUSPENDED" && (
-                      <button className="btn btn-ghost btn-sm" disabled={pending} onClick={() => confirm(`حساب ${u.name ?? u.phone} معلق شود؟ از همه‌ی دستگاه‌ها خارج می‌شود.`) && run(u.id, () => setUserStatus(u.id, "SUSPENDED"))}>
+                      <button className="btn btn-ghost btn-sm" disabled={pending} onClick={() => confirm(`حساب ${u.name ?? u.username ?? u.phone} معلق شود؟ از همه‌ی دستگاه‌ها خارج می‌شود.`) && run(u.id, () => setUserStatus(u.id, "SUSPENDED"))}>
                         تعلیق
+                      </button>
+                    )}
+                    {u.username && (
+                      <button className="btn btn-ghost btn-sm" disabled={pending} onClick={() => {
+                        const pw = prompt(`رمز عبور جدید برای ${u.name ?? u.username} (دست‌کم ۸ نویسه):`);
+                        if (pw) run(u.id, async () => { const r = await resetPassword(u.id, pw); if (r.ok) alert("رمز عبور جدید ثبت شد."); return r; });
+                      }}>
+                        رمز جدید
                       </button>
                     )}
                   </div>

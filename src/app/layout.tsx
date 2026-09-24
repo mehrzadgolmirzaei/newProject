@@ -3,6 +3,7 @@ import "@fontsource-variable/vazirmatn";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { Motion } from "@/components/Motion";
 import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fa" dir="rtl">
       <body>
+        <Motion />
         <a href="#main" className="sr-only">رفتن به محتوای اصلی</a>
         <SiteHeader />
         <main id="main">{children}</main>

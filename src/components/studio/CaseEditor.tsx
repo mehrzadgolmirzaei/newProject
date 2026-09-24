@@ -205,7 +205,7 @@ export function CaseEditor(p: Props) {
           <fieldset disabled={locked} style={{ border: 0, padding: 0, margin: 0, display: "contents" }}>
             {/* ۱ مشخصات */}
             <section className="editor-section" id="info">
-              <header><h2>مشخصات مورد</h2><p>اطلاعاتی که در فهرست اطلس و بالای صفحه‌ی مورد نمایش داده می‌شود.</p></header>
+              <header><h2>مشخصات مورد</h2><p>اطلاعاتی که در فهرست موارد و بالای صفحه‌ی مورد نمایش داده می‌شود.</p></header>
               <div className="body">
                 <div className="field">
                   <label className="req" htmlFor="title">عنوان</label>

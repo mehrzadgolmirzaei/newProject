@@ -2,6 +2,7 @@
 import { db } from "@/lib/db";
 import { removeAssetFiles } from "@/lib/media";
 
+const DEMO_USERNAMES = ["admin", "dr.kazemi", "dr.razavi", "dr.ahmadi", "dr.mousavi", "dr.sadeghi"];
 const DEMO_PHONES = ["09120000000", "09121111111", "09122222222", "09123333333", "09124444444", "09125555555"];
 
 async function main() {
@@ -10,8 +11,8 @@ async function main() {
   const r = await db.case.deleteMany({ where: { isDemo: true } });
   console.log(`✓ ${r.count} مورد نمایشی حذف شد.`);
   if (process.argv.includes("--users")) {
-    await db.comment.deleteMany({ where: { author: { phone: { in: DEMO_PHONES } } } });
-    const u = await db.user.deleteMany({ where: { phone: { in: DEMO_PHONES }, cases: { none: {} } } });
+    await db.comment.deleteMany({ where: { author: { OR: [{ phone: { in: DEMO_PHONES } }, { username: { in: DEMO_USERNAMES } }] } } });
+    const u = await db.user.deleteMany({ where: { OR: [{ phone: { in: DEMO_PHONES } }, { username: { in: DEMO_USERNAMES } }], cases: { none: {} } } });
     console.log(`✓ ${u.count} حساب نمونه حذف شد.`);
   } else {
     console.log("برای حذف حساب‌های نمونه هم: npm run demo:clear -- --users");

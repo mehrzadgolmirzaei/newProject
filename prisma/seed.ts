@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { processAsset, incomingPath } from "@/lib/media";
 import { INCOMING_DIR } from "@/lib/storage";
 import { answerKey, isMatch } from "@/lib/matching";
+import { hashPassword } from "@/lib/password";
 import type { Prisma, Role, UserStatus } from "@prisma/client";
 
 if (process.env.NODE_ENV === "production" && !process.argv.includes("--force")) {
@@ -22,8 +23,12 @@ type DemoUser = {
   role: Role; status: UserStatus; trusted?: boolean; profileComplete: boolean; approvedAt?: Date;
 };
 
-async function user(phone: string, data: DemoUser) {
-  return db.user.upsert({ where: { phone }, update: data, create: { phone, ...data } });
+// رمز عبور همه‌ی حساب‌های نمایشی
+const DEMO_PASSWORD = "viora1234";
+
+async function user(phone: string, username: string, data: DemoUser) {
+  const passwordHash = await hashPassword(DEMO_PASSWORD);
+  return db.user.upsert({ where: { phone }, update: { ...data, username, passwordHash }, create: { phone, username, passwordHash, ...data } });
 }
 
 type Seed = {
@@ -39,12 +44,12 @@ type Seed = {
 async function main() {
   console.log("→ کاربران نمایشی");
   const now = new Date();
-  const admin = await user("09120000000", { name: "مدیر سامانه", medicalNumber: "100000", specialty: "پاتولوژیست", role: "ADMIN", status: "ACTIVE", profileComplete: true, approvedAt: now });
-  const drA = await user("09121111111", { name: "دکتر سارا کاظمی", medicalNumber: "123456", specialty: "پاتولوژیست — پستان و زنان", institution: "آزمایشگاه پاتوبیولوژی ویورا", role: "CONTRIBUTOR", status: "ACTIVE", trusted: true, profileComplete: true, approvedAt: now });
-  const drB = await user("09122222222", { name: "دکتر امیر رضوی", medicalNumber: "654321", specialty: "پاتولوژیست — بافت نرم و سر و گردن", institution: "بیمارستان آموزشی", role: "CONTRIBUTOR", status: "ACTIVE", profileComplete: true, approvedAt: now });
-  const m1 = await user("09123333333", { name: "دکتر نگار احمدی", medicalNumber: "200001", specialty: "دستیار پاتولوژی", institution: "دانشگاه علوم پزشکی", role: "MEMBER", status: "ACTIVE", profileComplete: true, approvedAt: now });
-  const m2 = await user("09124444444", { name: "دکتر رضا موسوی", medicalNumber: "200002", specialty: "دستیار پاتولوژی", role: "MEMBER", status: "ACTIVE", profileComplete: true, approvedAt: now });
-  await user("09125555555", { name: "دکتر مریم صادقی", medicalNumber: "200003", specialty: "پاتولوژیست", city: "شیراز", role: "MEMBER", status: "PENDING", profileComplete: true });
+  const admin = await user("09120000000", "admin", { name: "مدیر سامانه", medicalNumber: "100000", specialty: "پاتولوژیست", role: "ADMIN", status: "ACTIVE", profileComplete: true, approvedAt: now });
+  const drA = await user("09121111111", "dr.kazemi", { name: "دکتر سارا کاظمی", medicalNumber: "123456", specialty: "پاتولوژیست — پستان و زنان", institution: "آزمایشگاه پاتوبیولوژی ویورا", role: "CONTRIBUTOR", status: "ACTIVE", trusted: true, profileComplete: true, approvedAt: now });
+  const drB = await user("09122222222", "dr.razavi", { name: "دکتر امیر رضوی", medicalNumber: "654321", specialty: "پاتولوژیست — بافت نرم و سر و گردن", institution: "بیمارستان آموزشی", role: "CONTRIBUTOR", status: "ACTIVE", profileComplete: true, approvedAt: now });
+  const m1 = await user("09123333333", "dr.ahmadi", { name: "دکتر نگار احمدی", medicalNumber: "200001", specialty: "دستیار پاتولوژی", institution: "دانشگاه علوم پزشکی", role: "MEMBER", status: "ACTIVE", profileComplete: true, approvedAt: now });
+  const m2 = await user("09124444444", "dr.mousavi", { name: "دکتر رضا موسوی", medicalNumber: "200002", specialty: "دستیار پاتولوژی", role: "MEMBER", status: "ACTIVE", profileComplete: true, approvedAt: now });
+  await user("09125555555", "dr.sadeghi", { name: "دکتر مریم صادقی", medicalNumber: "200003", specialty: "پاتولوژیست", city: "شیراز", role: "MEMBER", status: "PENDING", profileComplete: true });
   const authors: Record<string, string> = { A: drA.id, B: drB.id };
 
   const seeds: Seed[] = [
@@ -300,11 +305,11 @@ async function main() {
     data: { caseId: createdIds[2], authorId: drB.id, pinned: true, body: "نکته: در رتروپریتوئن هر توده‌ی چربی بزرگ را تا خلافش ثابت نشده WDLPS در نظر بگیرید و حتماً MDM2 FISH درخواست کنید." },
   });
 
-  console.log("\n✓ داده‌ی نمایشی ساخته شد. حساب‌ها (ورود با کد پیامکی؛ در حالت توسعه کد روی صفحه نمایش داده می‌شود):");
-  console.log("  مدیر:            09120000000");
-  console.log("  ارائه‌دهنده:      09121111111 (انتشار مستقیم) · 09122222222");
-  console.log("  عضو فعال:        09123333333 · 09124444444");
-  console.log("  عضو در انتظار:   09125555555");
+  console.log(`\n✓ داده‌ی نمایشی ساخته شد. نام‌های کاربری (رمز عبور همه: ${DEMO_PASSWORD}):`);
+  console.log("  مدیر:            admin");
+  console.log("  ارائه‌دهنده:      dr.kazemi (انتشار مستقیم) · dr.razavi");
+  console.log("  عضو فعال:        dr.ahmadi · dr.mousavi");
+  console.log("  عضو در انتظار:   dr.sadeghi");
 }
 
 main()

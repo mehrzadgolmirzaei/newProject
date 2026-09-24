@@ -21,6 +21,10 @@ export async function audit(
 
 export const AUDIT_LABEL: Record<string, string> = {
   "auth.login": "ورود",
+  "auth.register": "ثبت‌نام",
+  "user.create": "ایجاد حساب",
+  "user.password": "تغییر رمز عبور",
+  "user.password.reset": "تعیین رمز جدید",
   "user.onboard": "تکمیل پروفایل",
   "user.approve": "تأیید حساب",
   "user.suspend": "تعلیق حساب",

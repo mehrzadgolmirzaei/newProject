@@ -14,7 +14,7 @@ export default async function Subspecialties() {
     <div className="wrap">
       <div className="page-head">
         <h1>زیرتخصص‌ها</h1>
-        <p>موارد اطلس بر اساس زیرتخصص‌های پاتولوژی جراحی، سیتوپاتولوژی و هماتوپاتولوژی دسته‌بندی شده‌اند.</p>
+        <p>موارد کتابخانه بر اساس زیرتخصص‌های پاتولوژی جراحی، سیتوپاتولوژی و هماتوپاتولوژی دسته‌بندی شده‌اند.</p>
       </div>
       <div className="sub-grid">
         {sorted.map((s) => (

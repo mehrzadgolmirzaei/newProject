@@ -6,6 +6,7 @@ import { getUser } from "@/lib/auth";
 import { normalizeFa, toLatinDigits } from "@/lib/text";
 import { num } from "@/lib/format";
 import { UsersTable } from "@/components/admin/UsersTable";
+import { CreateUser } from "@/components/admin/CreateUser";
 import { Icon } from "@/components/Icon";
 
 export const metadata: Metadata = { title: "کاربران", robots: { index: false } };
@@ -19,7 +20,7 @@ export default async function Users({ searchParams }: { searchParams: Promise<{ 
   const where: Prisma.UserWhereInput = {
     ...(status ? { status } : {}),
     ...(status === "PENDING" ? { profileComplete: true } : {}),
-    ...(q ? { OR: [{ name: { contains: q, mode: "insensitive" } }, { phone: { contains: toLatinDigits(q) } }, { medicalNumber: { contains: toLatinDigits(q) } }] } : {}),
+    ...(q ? { OR: [{ name: { contains: q, mode: "insensitive" } }, { username: { contains: q.toLowerCase() } }, { phone: { contains: toLatinDigits(q) } }, { medicalNumber: { contains: toLatinDigits(q) } }] } : {}),
   };
   const [users, groups, pendingReady] = await Promise.all([
     db.user.findMany({
@@ -41,6 +42,7 @@ export default async function Users({ searchParams }: { searchParams: Promise<{ 
           <p>شماره‌ی نظام پزشکی را در سامانه‌ی نظام پزشکی بررسی کنید و سپس حساب را تأیید کنید. برای اجازه‌ی ثبت مورد، نقش «ارائه‌دهنده» بدهید.</p>
         </div>
       </div>
+      <CreateUser />
       <div className="toolbar">
         <div className="seg">
           <Link href="/admin/users" aria-current={!status}>همه</Link>
@@ -52,13 +54,13 @@ export default async function Users({ searchParams }: { searchParams: Promise<{ 
         <form className="header-search" style={{ display: "flex" }}>
           <Icon name="search" size={16} />
           {status && <input type="hidden" name="status" value={status} />}
-          <input name="q" defaultValue={sp.q} placeholder="نام، موبایل یا شماره‌ی نظام" />
+          <input name="q" defaultValue={sp.q} placeholder="نام، نام کاربری یا شماره‌ی نظام" />
         </form>
       </div>
       <UsersTable
         meId={me!.id}
         users={users.map((u) => ({
-          id: u.id, name: u.name, phone: u.phone, medicalNumber: u.medicalNumber, specialty: u.specialty, institution: u.institution, city: u.city,
+          id: u.id, name: u.name, username: u.username, phone: u.phone, medicalNumber: u.medicalNumber, specialty: u.specialty, institution: u.institution, city: u.city,
           role: u.role, status: u.status, trusted: u.trusted, profileComplete: u.profileComplete, createdAt: u.createdAt, lastLoginAt: u.lastLoginAt,
           cases: u._count.cases, attempts: u._count.attempts, comments: u._count.comments,
         }))}

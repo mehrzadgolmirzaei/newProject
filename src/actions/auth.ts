@@ -11,13 +11,17 @@ import { clientIp } from "@/lib/request";
 import { audit } from "@/lib/audit";
 import { faDigits, normalizeFa, normalizePhone, maskPhone, toLatinDigits } from "@/lib/text";
 import { fail, done, type ActionResult } from "@/lib/result";
+import { hashPassword, verifyPassword, normalizeUsername, PASSWORD_MIN } from "@/lib/password";
 
 const OTP_TTL_SEC = 120;
 const OTP_MAX_TRIES = 5;
 
 const wait = (sec: number) => `لطفاً ${faDigits(sec)} ثانیه‌ی دیگر دوباره تلاش کنید.`;
 
+const safeNext = (next?: string) => (next && next.startsWith("/") && !next.startsWith("//") ? next : "/");
+
 export async function requestOtp(input: { phone: string }): Promise<ActionResult<{ masked: string; ttl: number; devCode?: string }>> {
+  if (env.AUTH_METHOD !== "otp") return fail("ورود با کد پیامکی فعال نیست.");
   const phone = normalizePhone(input.phone ?? "");
   if (!phone) return fail("شماره‌ی موبایل معتبر نیست. نمونه: ۰۹۱۲۳۴۵۶۷۸۹", "phone");
 
@@ -49,6 +53,7 @@ export async function requestOtp(input: { phone: string }): Promise<ActionResult
 export async function verifyOtp(input: { phone: string; code: string; next?: string }): Promise<ActionResult<{ to: string }>> {
   const phone = normalizePhone(input.phone ?? "");
   const code = toLatinDigits(String(input.code ?? "")).replace(/\D/g, "");
+  if (env.AUTH_METHOD !== "otp") return fail("ورود با کد پیامکی فعال نیست.");
   if (!phone || code.length !== 6) return fail("کد ۶ رقمی را کامل وارد کنید.", "code");
 
   const ip = await clientIp();
@@ -78,8 +83,75 @@ export async function verifyOtp(input: { phone: string; code: string; next?: str
   await createSession(user.id);
   await audit(user.id, "auth.login", "User", user.id);
 
-  const next = input.next && input.next.startsWith("/") && !input.next.startsWith("//") ? input.next : "/";
+  const next = safeNext(input.next);
   return done({ to: user.profileComplete ? next : `/onboarding?next=${encodeURIComponent(next)}` });
+}
+
+// ─── ورود با نام کاربری و رمز عبور ───────────────────────────────────────
+
+const BAD_LOGIN = "نام کاربری یا رمز عبور صحیح نیست.";
+
+export async function loginWithPassword(input: { username: string; password: string; next?: string }): Promise<ActionResult<{ to: string }>> {
+  if (env.AUTH_METHOD !== "password") return fail("ورود با رمز عبور فعال نیست.");
+  const username = normalizeUsername(input.username ?? "");
+  const password = String(input.password ?? "");
+  if (!username || !password) return fail(BAD_LOGIN);
+
+  const ip = await clientIp();
+  for (const [key, limit, win] of [
+    [`login:user:${username}`, 8, 900],
+    [`login:ip:${ip}`, 40, 900],
+  ] as const) {
+    const r = await hit(key, limit, win);
+    if (!r.ok) return fail(`تعداد تلاش‌های ناموفق بیش از حد مجاز است. ${wait(r.retryAfter)}`);
+  }
+
+  const user = await db.user.findUnique({ where: { username }, select: { id: true, passwordHash: true, status: true, profileComplete: true } });
+  const ok = await verifyPassword(password, user?.passwordHash);
+  if (!user || !ok) return fail(BAD_LOGIN);
+  if (user.status === "SUSPENDED") return fail("این حساب معلق شده است. با مدیر سامانه تماس بگیرید.");
+
+  await createSession(user.id);
+  await audit(user.id, "auth.login", "User", user.id);
+  const next = safeNext(input.next);
+  return done({ to: user.profileComplete ? next : `/onboarding?next=${encodeURIComponent(next)}` });
+}
+
+const registerSchema = z.object({
+  username: z.string().transform((s) => normalizeUsername(s) ?? "").refine(Boolean, "نام کاربری باید با حرف لاتین شروع شود و فقط شامل حروف لاتین کوچک، عدد، نقطه یا زیرخط باشد (۳ تا ۳۲ نویسه)."),
+  password: z.string().min(PASSWORD_MIN, `رمز عبور باید دست‌کم ${faDigits(PASSWORD_MIN)} نویسه باشد.`).max(128),
+});
+
+export async function register(input: { username: string; password: string; next?: string }): Promise<ActionResult<{ to: string }>> {
+  if (env.AUTH_METHOD !== "password") return fail("ثبت‌نام با رمز عبور فعال نیست.");
+  const p = registerSchema.safeParse(input);
+  if (!p.success) return fail(p.error.issues[0].message, String(p.error.issues[0].path[0] ?? ""));
+
+  const ip = await clientIp();
+  const r = await hit(`register:ip:${ip}`, 10, 3600);
+  if (!r.ok) return fail(wait(r.retryAfter));
+
+  const exists = await db.user.findUnique({ where: { username: p.data.username }, select: { id: true } });
+  if (exists) return fail("این نام کاربری قبلاً ثبت شده است.", "username");
+
+  const user = await db.user.create({ data: { username: p.data.username, passwordHash: await hashPassword(p.data.password) } });
+  await createSession(user.id);
+  await audit(user.id, "auth.register", "User", user.id);
+  return done({ to: `/onboarding?next=${encodeURIComponent(safeNext(input.next))}` });
+}
+
+export async function changePassword(input: { current: string; next: string }): Promise<ActionResult> {
+  const me = await getUser();
+  if (!me) return fail("نشست شما منقضی شده است. دوباره وارد شوید.");
+  const r = await hit(`pwchange:user:${me.id}`, 10, 900);
+  if (!r.ok) return fail(wait(r.retryAfter));
+  const row = await db.user.findUnique({ where: { id: me.id }, select: { passwordHash: true } });
+  if (row?.passwordHash && !(await verifyPassword(String(input.current ?? ""), row.passwordHash))) return fail("رمز عبور فعلی صحیح نیست.", "current");
+  const next = String(input.next ?? "");
+  if (next.length < PASSWORD_MIN || next.length > 128) return fail(`رمز عبور جدید باید دست‌کم ${faDigits(PASSWORD_MIN)} نویسه باشد.`, "next");
+  await db.user.update({ where: { id: me.id }, data: { passwordHash: await hashPassword(next) } });
+  await audit(me.id, "user.password", "User", me.id);
+  return done();
 }
 
 export async function logout() {

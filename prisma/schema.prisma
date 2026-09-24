@@ -29,7 +29,10 @@ enum UserStatus {
 
 model User {
   id              String     @id @default(cuid())
-  phone           String     @unique // 09xxxxxxxxx — شناسه‌ی ورود
+  // ورود با نام کاربری و رمز عبور (AUTH_METHOD=password) یا با کد پیامکی (AUTH_METHOD=otp)
+  username        String?    @unique
+  passwordHash    String?
+  phone           String?    @unique // 09xxxxxxxxx
   name            String?
   medicalNumber   String?    @unique // شماره نظام پزشکی
   specialty       String?

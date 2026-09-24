@@ -27,7 +27,7 @@ export async function SiteHeader() {
 
         <NavLinks
           links={[
-            { href: "/cases", label: "اطلس موارد" },
+            { href: "/cases", label: "کتابخانه‌ی موارد" },
             { href: "/subspecialties", label: "زیرتخصص‌ها" },
             { href: "/contributors", label: "ارائه‌دهندگان" },
             { href: "/about", label: "درباره" },
@@ -45,7 +45,7 @@ export async function SiteHeader() {
         </Link>
         <div className="mobile-only">
           <Dropdown summary={<span className="btn btn-ghost btn-icon" aria-label="منو"><Icon name="menu" /></span>}>
-            <Link href="/cases"><Icon name="microscope" size={17} /> اطلس موارد</Link>
+            <Link href="/cases"><Icon name="microscope" size={17} /> کتابخانه‌ی موارد</Link>
             <Link href="/subspecialties"><Icon name="grid" size={17} /> زیرتخصص‌ها</Link>
             <Link href="/contributors"><Icon name="users" size={17} /> ارائه‌دهندگان</Link>
             <Link href="/about"><Icon name="info" size={17} /> درباره</Link>

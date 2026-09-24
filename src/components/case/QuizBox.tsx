@@ -79,7 +79,7 @@ export function QuizBox({ caseId, question, state, nextUrl }: Props) {
       ) : state === "guest" ? (
         <div className="locked">
           <Icon name="lock" />
-          <span style={{ flex: 1 }}>برای ثبت تشخیص و مشاهده‌ی پاسخ، با شماره‌ی تلفن همراه وارد شوید. عضویت برای پزشکان رایگان است.</span>
+          <span style={{ flex: 1 }}>برای ثبت تشخیص و مشاهده‌ی پاسخ، وارد حساب کاربری خود شوید. عضویت برای پزشکان رایگان است.</span>
           <Link href={`/login?next=${encodeURIComponent(nextUrl)}`} className="btn btn-primary btn-sm">ورود</Link>
         </div>
       ) : state === "incomplete" ? (

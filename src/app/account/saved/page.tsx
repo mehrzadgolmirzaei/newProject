@@ -18,10 +18,10 @@ export default async function Saved() {
       <div className="dash-head"><div><h1>موارد نشان‌شده</h1><p>مواردی که برای مرور دوباره نگه داشته‌اید</p></div></div>
       {cards.length === 0 ? (
         <Empty icon="bookmark" title="موردی نشان نکرده‌اید" text="در صفحه‌ی هر مورد، دکمه‌ی «نشان‌کردن» را بزنید.">
-          <Link href="/cases" className="btn btn-secondary">مرور اطلس</Link>
+          <Link href="/cases" className="btn btn-secondary">مرور موارد</Link>
         </Empty>
       ) : (
-        <div className="case-grid">{cards.map((c) => <CaseCard key={c.id} c={c} />)}</div>
+        <div className="case-grid">{cards.map((c, i) => <div key={c.id} data-reveal style={{ "--i": i % 3 } as React.CSSProperties}><CaseCard c={c} /></div>)}</div>
       )}
     </>
   );

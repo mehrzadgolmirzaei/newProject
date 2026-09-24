@@ -13,7 +13,7 @@ export default async function Audit({ searchParams }: { searchParams: Promise<{ 
   const page = Math.max(1, Number((await searchParams).page) || 1);
   const [total, rows] = await Promise.all([
     db.auditLog.count(),
-    db.auditLog.findMany({ orderBy: { createdAt: "desc" }, skip: (page - 1) * PER, take: PER, include: { actor: { select: { name: true, phone: true } } } }),
+    db.auditLog.findMany({ orderBy: { createdAt: "desc" }, skip: (page - 1) * PER, take: PER, include: { actor: { select: { name: true, username: true, phone: true } } } }),
   ]);
   return (
     <>
@@ -25,7 +25,7 @@ export default async function Audit({ searchParams }: { searchParams: Promise<{ 
             {rows.map((r) => (
               <tr key={r.id}>
                 <td className="muted" style={{ whiteSpace: "nowrap" }}>{faDateTime(r.createdAt)}</td>
-                <td>{r.actor?.name ?? r.actor?.phone ?? "—"}</td>
+                <td>{r.actor?.name ?? r.actor?.username ?? r.actor?.phone ?? "—"}</td>
                 <td>{AUDIT_LABEL[r.action] ?? r.action}</td>
                 <td className="mono muted" style={{ fontSize: 12 }}>{r.entity}{r.entityId ? ` · ${r.entityId.slice(-8)}` : ""}</td>
                 <td className="muted" style={{ fontSize: 12.5, maxWidth: 280 }} dir="auto">{r.meta ? JSON.stringify(r.meta) : ""}</td>

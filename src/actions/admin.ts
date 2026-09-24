@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getUser, isAdmin, revokeAllSessions } from "@/lib/auth";
 import { audit } from "@/lib/audit";
-import { normalizeFa } from "@/lib/text";
+import { faDigits, normalizeFa } from "@/lib/text";
+import { hashPassword, normalizeUsername, PASSWORD_MIN } from "@/lib/password";
 import { fail, done, type ActionResult } from "@/lib/result";
 
 const DENIED = "این کار به دسترسی مدیر نیاز دارد.";
@@ -45,6 +46,38 @@ export async function setUserRole(userId: string, role: "ADMIN" | "CONTRIBUTOR" 
   await db.user.update({ where: { id: userId }, data: { role, ...(role === "MEMBER" ? { trusted: false } : {}) } });
   await audit(me.id, "user.role", "User", userId, { from: u.role, to: role });
   revalidatePath("/admin/users");
+  return done();
+}
+
+/** ساخت حساب توسط مدیر — حساب بلافاصله فعال است؛ کاربر در نخستین ورود مشخصات پزشکی را تکمیل می‌کند */
+export async function createUser(input: { username: string; password: string; role: "ADMIN" | "CONTRIBUTOR" | "MEMBER" }): Promise<ActionResult> {
+  const me = await admin();
+  if (!me) return fail(DENIED);
+  const username = normalizeUsername(input.username ?? "");
+  if (!username) return fail("نام کاربری باید با حرف لاتین شروع شود و فقط شامل حروف لاتین کوچک، عدد، نقطه یا زیرخط باشد.", "username");
+  const password = String(input.password ?? "");
+  if (password.length < PASSWORD_MIN) return fail(`رمز عبور باید دست‌کم ${faDigits(PASSWORD_MIN)} نویسه باشد.`, "password");
+  if (!["ADMIN", "CONTRIBUTOR", "MEMBER"].includes(input.role)) return fail("نقش نامعتبر است.");
+  if (await db.user.findUnique({ where: { username }, select: { id: true } })) return fail("این نام کاربری قبلاً ثبت شده است.", "username");
+
+  const u = await db.user.create({
+    data: { username, passwordHash: await hashPassword(password), role: input.role, status: "ACTIVE", approvedAt: new Date(), approvedById: me.id },
+  });
+  await audit(me.id, "user.create", "User", u.id, { username, role: input.role });
+  revalidatePath("/admin/users");
+  return done();
+}
+
+/** تعیین رمز عبور جدید برای کاربر (مثلاً وقتی رمز را فراموش کرده است) — همه‌ی نشست‌های او باطل می‌شود */
+export async function resetPassword(userId: string, password: string): Promise<ActionResult> {
+  const me = await admin();
+  if (!me) return fail(DENIED);
+  if (String(password ?? "").length < PASSWORD_MIN) return fail(`رمز عبور باید دست‌کم ${faDigits(PASSWORD_MIN)} نویسه باشد.`);
+  const u = await db.user.findUnique({ where: { id: userId }, select: { id: true, username: true } });
+  if (!u?.username) return fail("این کاربر نام کاربری ندارد.");
+  await db.user.update({ where: { id: userId }, data: { passwordHash: await hashPassword(password) } });
+  if (userId !== me.id) await revokeAllSessions(userId);
+  await audit(me.id, "user.password.reset", "User", userId);
   return done();
 }
 

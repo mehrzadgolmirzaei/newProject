@@ -19,7 +19,7 @@ type SP = Record<string, string | undefined>;
 export async function generateMetadata({ searchParams }: { searchParams: Promise<SP> }): Promise<Metadata> {
   const sp = await searchParams;
   const sub = sp.sub ? subspecialtyFa(sp.sub) : null;
-  return { title: sub && sub !== "—" ? `موارد ${sub}` : "اطلس موارد", alternates: { canonical: "/cases" } };
+  return { title: sub && sub !== "—" ? `موارد ${sub}` : "کتابخانه‌ی موارد", alternates: { canonical: "/cases" } };
 }
 
 const pick = <T extends string>(v: string | undefined, allowed: readonly T[]) => (allowed.includes(v as T) ? (v as T) : undefined);
@@ -65,7 +65,7 @@ export default async function Library({ searchParams }: { searchParams: Promise<
   return (
     <div className="wrap">
       <div className="page-head">
-        <h1>{f.sub ? subspecialtyFa(f.sub) : "اطلس موارد"}</h1>
+        <h1>{f.sub ? subspecialtyFa(f.sub) : "کتابخانه‌ی موارد"}</h1>
         <p>موارد ناشناس را حل کنید یا موارد آموزشی را مرور کنید. جست‌وجو در عنوان، اندام، شرح حال و یافته‌ها انجام می‌شود؛ تشخیص موارد ناشناس هرگز در نتایج جست‌وجو اثر ندارد.</p>
       </div>
 
@@ -150,7 +150,7 @@ export default async function Library({ searchParams }: { searchParams: Promise<
             </Empty>
           ) : (
             <>
-              <div className="case-grid">{res.cases.map((c) => <CaseCard key={c.id} c={c} />)}</div>
+              <div className="case-grid">{res.cases.map((c, i) => <div key={c.id} data-reveal style={{ "--i": i % 3 } as React.CSSProperties}><CaseCard c={c} /></div>)}</div>
               <Pager page={res.page} pages={res.pages} href={(p) => href({ page: p > 1 ? String(p) : undefined })} />
             </>
           )}

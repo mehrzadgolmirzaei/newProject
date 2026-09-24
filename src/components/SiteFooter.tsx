@@ -13,12 +13,12 @@ export function SiteFooter() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="" height={30} width={107} className="logo-dark" style={{ height: 30, width: "auto" }} />
           <p className="footer-note">
-            {SITE.name}، اطلسی آموزشی از موارد دشوار پاتولوژی است که به کوشش {SITE.lab} و با مشارکت پاتولوژیست‌های تأییدشده تهیه می‌شود.
+            {SITE.name}، سامانه‌ای آموزشی بر پایه‌ی موارد دشوار پاتولوژی است که به کوشش {SITE.lab} و با مشارکت پاتولوژیست‌های تأییدشده تهیه می‌شود.
             محتوای این سایت برای آموزش است و جایگزین مشاوره یا گزارش پاتولوژی نیست.
           </p>
         </div>
         <div>
-          <h4>اطلس</h4>
+          <h4>کتابخانه</h4>
           <Link href="/cases">همه‌ی موارد</Link>
           <Link href="/cases?mode=UNKNOWN&status=unsolved">موارد حل‌نشده</Link>
           <Link href="/subspecialties">زیرتخصص‌ها</Link>

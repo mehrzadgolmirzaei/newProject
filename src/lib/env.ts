@@ -15,6 +15,8 @@ const schema = z
     ATLAS_VISIBILITY: z.enum(["public", "members"]).default("public"),
     AUTH_SECRET: z.string().default("dev-only-secret-do-not-use-in-production"),
 
+    // password ← ورود با نام کاربری و رمز عبور · otp ← ورود با کد پیامکی
+    AUTH_METHOD: z.enum(["password", "otp"]).default("password"),
     SMS_DRIVER: z.enum(["console", "kavenegar", "smsir"]).default("console"),
     SMS_API_KEY: z.string().default(""),
     SMS_TEMPLATE: z.string().default(""),
@@ -35,9 +37,9 @@ const schema = z
     if (isProd && !isBuild) {
       if (e.AUTH_SECRET.length < 32 || e.AUTH_SECRET.startsWith("dev-only") || e.AUTH_SECRET.startsWith("replace-"))
         ctx.addIssue({ code: "custom", path: ["AUTH_SECRET"], message: "در production یک رشته‌ی تصادفی ۳۲+ نویسه لازم است" });
-      if (e.SMS_DRIVER === "console")
+      if (e.AUTH_METHOD === "otp" && e.SMS_DRIVER === "console")
         ctx.addIssue({ code: "custom", path: ["SMS_DRIVER"], message: "در production باید kavenegar یا smsir باشد" });
-      if (e.SMS_DRIVER !== "console" && (!e.SMS_API_KEY || !e.SMS_TEMPLATE))
+      if (e.AUTH_METHOD === "otp" && e.SMS_DRIVER !== "console" && (!e.SMS_API_KEY || !e.SMS_TEMPLATE))
         ctx.addIssue({ code: "custom", path: ["SMS_API_KEY"], message: "کلید و الگوی پیامک لازم است" });
     }
     if (e.STORAGE_DRIVER === "s3") {

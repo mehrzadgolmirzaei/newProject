@@ -29,7 +29,7 @@ export function AdminCaseTools({ caseId, status, featured }: { caseId: string; s
         </button>
       )}
       {status === "PUBLISHED" && (
-        <button className="btn btn-ghost btn-sm" disabled={pending} onClick={() => confirm("این مورد از اطلس خارج شود؟") && run(() => archiveCase(caseId, true), "بایگانی شد.")}>
+        <button className="btn btn-ghost btn-sm" disabled={pending} onClick={() => confirm("این مورد از کتابخانه خارج شود؟") && run(() => archiveCase(caseId, true), "بایگانی شد.")}>
           بایگانی
         </button>
       )}
