@@ -41,6 +41,8 @@ export default async function Home() {
     <>
       <section className="hero">
         <div className="hero-bg" aria-hidden="true">
+          <span className="hero-photo" />
+          <span className="hero-shade" />
           <span className="blob blob-1" />
           <span className="blob blob-2" />
           <span className="blob blob-3" />

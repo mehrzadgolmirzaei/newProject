@@ -328,6 +328,16 @@ p { margin: 0; }
   padding-block: 72px 112px;
 }
 .hero-bg { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+/* عکس آزمایشگاه با زوم بسیار آرام؛ لایه‌ی سایه متن را خوانا نگه می‌دارد */
+.hero-photo {
+  position: absolute; inset: -4%;
+  background: url("/images/hero-lab.webp") var(--photo-pos, 30% 50%) / cover no-repeat;
+  transform: scaleX(var(--photo-flip, -1)); /* میکروسکوپ کنار عدسی قرار می‌گیرد */
+  animation: hero-zoom 38s ease-in-out infinite alternate;
+}
+@keyframes hero-zoom { from { scale: 1; } to { scale: 1.1; } }
+@media (max-width: 960px) { .hero-photo { background-image: url("/images/hero-lab-sm.webp"); } }
+.hero-shade { position: absolute; inset: 0; }
 .blob { position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.55; will-change: transform; }
 .blob-1 { width: 520px; height: 520px; background: #5b47d6; top: -180px; inset-inline-end: -120px; animation: drift-a 22s ease-in-out infinite alternate; }
 .blob-2 { width: 420px; height: 420px; background: #c43d7c; bottom: -220px; inset-inline-start: 18%; opacity: 0.38; animation: drift-b 26s ease-in-out infinite alternate; }
@@ -1095,3 +1105,44 @@ main { animation: page-in 0.5s var(--ease) both; }
 :root[data-theme="dark"] .seg { background: #10152a; }
 :root[data-theme="dark"] .seg a[aria-current="true"], :root[data-theme="dark"] .seg button[aria-pressed="true"], :root[data-theme="dark"] .seg button[aria-selected="true"] { background: #1f2750; color: #fff; }
 :root[data-theme="dark"] ::selection { background: rgba(167, 139, 250, 0.35); }
+
+/* ─── قهرمان با عکس آزمایشگاه ─────────────────────────────────────────── */
+
+/* تم تیره: سایه‌ی سرمه‌ای عمیق روی سمت متن، عکس در سمت عدسی نمایان */
+.hero-shade {
+  background:
+    linear-gradient(to left, rgba(6, 10, 32, 0.95) 0%, rgba(6, 10, 32, 0.82) 36%, rgba(8, 12, 36, 0.4) 66%, rgba(8, 12, 36, 0.5) 100%),
+    linear-gradient(to bottom, rgba(6, 10, 32, 0.45), rgba(6, 10, 32, 0.08) 38%, rgba(6, 10, 32, 0.75));
+}
+.hero .blob { opacity: 0.26; mix-blend-mode: screen; }
+.hero .blob-2 { opacity: 0.22; }
+
+/* تم روشن: قهرمان روشن و بالینی با متن تیره */
+:root:not([data-theme="dark"]) .hero {
+  --h-ink: #0f1734;
+  --h-muted: #3b4462;
+  background: #e8eef9;
+}
+:root:not([data-theme="dark"]) .hero-shade {
+  background:
+    linear-gradient(to left, rgba(248, 250, 254, 0.97) 0%, rgba(248, 250, 254, 0.9) 34%, rgba(244, 247, 253, 0.5) 64%, rgba(244, 247, 253, 0.12) 100%),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0) 45%, rgba(247, 246, 243, 0.55) 85%, #f7f6f3);
+}
+:root:not([data-theme="dark"]) .hero .blob { opacity: 0.12; mix-blend-mode: multiply; }
+:root:not([data-theme="dark"]) .hero .blob-2 { opacity: 0.07; }
+:root:not([data-theme="dark"]) .hero-mesh { background-image: radial-gradient(rgba(27, 43, 91, 0.14) 1px, transparent 1.2px); }
+:root:not([data-theme="dark"]) .hero-eyebrow { background: rgba(255, 255, 255, 0.75); border-color: rgba(27, 43, 91, 0.12); color: #1b2b5b; box-shadow: 0 4px 14px rgba(27, 43, 91, 0.08); }
+:root:not([data-theme="dark"]) .hero h1 em { background-image: linear-gradient(90deg, #b23a6b, #6f5fd0 55%, #2f5bd1); }
+:root:not([data-theme="dark"]) .hero-stats { border-top-color: rgba(27, 43, 91, 0.12); }
+:root:not([data-theme="dark"]) .hero .btn-light { background: #1b2b5b; color: #fff; box-shadow: 0 10px 26px rgba(27, 43, 91, 0.28); }
+:root:not([data-theme="dark"]) .hero .btn-light:hover:not(:disabled) { background: #243873; }
+:root:not([data-theme="dark"]) .hero .btn-glass { background: rgba(255, 255, 255, 0.8); color: #1b2b5b; border-color: rgba(27, 43, 91, 0.18); }
+:root:not([data-theme="dark"]) .hero .btn-glass:hover:not(:disabled) { background: #fff; }
+:root:not([data-theme="dark"]) .lens { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0.35), 0 0 0 11px rgba(27, 43, 91, 0.12), 0 30px 80px rgba(15, 23, 52, 0.35); }
+:root:not([data-theme="dark"]) .lens-card { box-shadow: 0 24px 60px rgba(15, 23, 52, 0.22); }
+
+@media (max-width: 960px) {
+  /* موبایل: متن بالا و عکس زیر آن؛ سایه به‌صورت عمودی */
+  .hero-shade { background: linear-gradient(to bottom, rgba(6, 10, 32, 0.92) 0%, rgba(6, 10, 32, 0.8) 50%, rgba(8, 12, 36, 0.55) 75%, rgba(6, 10, 32, 0.85) 100%); }
+  :root:not([data-theme="dark"]) .hero-shade { background: linear-gradient(to bottom, rgba(248, 250, 254, 0.96) 0%, rgba(248, 250, 254, 0.88) 50%, rgba(244, 247, 253, 0.4) 75%, #f7f6f3 100%); }
+}
