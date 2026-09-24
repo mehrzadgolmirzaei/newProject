@@ -33,7 +33,7 @@ export default async function EditCase({ params }: { params: Promise<{ id: strin
         mode: c.mode, patientAge: c.patientAge, patientSex: c.patientSex, keywords: c.keywords,
         clinicalHistory: c.clinicalHistory, imaging: c.imaging, gross: c.gross, microscopic: c.microscopic, molecular: c.molecular,
         question: c.question, finalDiagnosis: c.finalDiagnosis, diagnosisAliases: c.diagnosisAliases,
-        showIhcBeforeAnswer: c.showIhcBeforeAnswer, discussion: c.discussion, teachingPoints: c.teachingPoints, references: c.references,
+        showIhcBeforeAnswer: c.showIhcBeforeAnswer, commentsEnabled: c.commentsEnabled, discussion: c.discussion, teachingPoints: c.teachingPoints, references: c.references,
         ihc: c.ihc.map((r) => ({ marker: r.marker, outcome: r.outcome, pattern: r.pattern, note: r.note })),
         differentials: c.differentials.map((d) => ({ name: d.name, note: d.note })),
         deidConfirmed: !!c.deidConfirmedAt,

@@ -20,7 +20,7 @@ export type CommentNode = {
 
 type Ctx = { caseId: string; meId: string | null; canPost: boolean; canModerate: boolean; caseAuthorId: string };
 
-export function Discussion({ nodes, ctx, blocked }: { nodes: CommentNode[]; ctx: Ctx; blocked?: string }) {
+export function Discussion({ nodes, ctx, blocked, closed }: { nodes: CommentNode[]; ctx: Ctx; blocked?: string; closed?: boolean }) {
   const count = nodes.reduce((n, c) => n + (c.status === "VISIBLE" ? 1 : 0) + (c.replies?.filter((r) => r.status === "VISIBLE").length ?? 0), 0);
   return (
     <section className="doc-section" id="discussion">
@@ -33,6 +33,9 @@ export function Discussion({ nodes, ctx, blocked }: { nodes: CommentNode[]; ctx:
           <div className="thread">
             {nodes.map((n) => <Comment key={n.id} n={n} ctx={ctx} />)}
           </div>
+          {closed && (
+            <div className="locked"><Icon name="lock" /> ارائه‌دهنده گفت‌وگو را برای این مورد بسته است{ctx.canModerate ? "؛ فقط شما و مدیر سامانه می‌توانید نظر بنویسید." : "."}</div>
+          )}
           {ctx.canPost && <Composer ctx={ctx} />}
         </div>
       )}

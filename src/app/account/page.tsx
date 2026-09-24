@@ -74,7 +74,7 @@ export default async function Account() {
       )}
 
       {attempts.length === 0 ? (
-        <Empty icon="microscope" title="هنوز موردی حل نکرده‌اید" text="یک مورد ناشناس انتخاب کنید، تشخیص خود را بنویسید و با پاسخ ارائه‌دهنده مقایسه کنید.">
+        <Empty icon="microscope" title="هنوز موردی حل نکرده‌اید" text="یک مورد چالشی انتخاب کنید، تشخیص خود را بنویسید و با پاسخ ارائه‌دهنده مقایسه کنید.">
           <Link href="/cases?mode=UNKNOWN" className="btn btn-primary">شروع با یک مورد</Link>
         </Empty>
       ) : (

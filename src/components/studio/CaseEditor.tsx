@@ -32,6 +32,7 @@ export type EditorForm = {
   finalDiagnosis: string;
   diagnosisAliases: string[];
   showIhcBeforeAnswer: boolean;
+  commentsEnabled: boolean;
   discussion: string;
   teachingPoints: string[];
   references: string[];
@@ -55,15 +56,18 @@ type Props = {
 };
 
 const SECTIONS = [
+  ["setup", "نوع مورد و گفت‌وگو"],
   ["info", "مشخصات مورد"],
   ["images", "تصاویر و اسلایدها"],
   ["clinical", "شرح حال بالینی"],
   ["findings", "یافته‌های پاتولوژی"],
   ["ihc", "IHC و مولکولی"],
-  ["dx", "پرسش و تشخیص"],
+  ["dx", "تشخیص"],
   ["teaching", "بحث و آموزش"],
   ["submit", "حریم خصوصی و ارسال"],
 ] as const;
+const OPTIONAL = new Set(["ihc", "teaching"]);
+const REQUIRED = ["info", "images", "clinical", "findings", "dx", "submit"] as const;
 
 const DEID = [
   "نام، شماره‌ی پرونده، کد ملی و شماره‌ی پذیرش بیمار در هیچ متن یا تصویری نیست.",
@@ -150,6 +154,7 @@ export function CaseEditor(p: Props) {
   }
 
   const doneSections: Record<string, boolean> = {
+    setup: true,
     info: f.title.length >= 8 && !!f.subspecialty,
     images: !missing.some((m) => m.includes("تصویر")),
     clinical: f.clinicalHistory.length >= 20,
@@ -160,6 +165,8 @@ export function CaseEditor(p: Props) {
     submit: f.deidConfirmed,
   };
   const locked = p.status === "IN_REVIEW" && !p.directPublish;
+  const challenge = f.mode === "UNKNOWN";
+  const doneCount = REQUIRED.filter((k) => doneSections[k]).length;
 
   return (
     <>
@@ -174,6 +181,10 @@ export function CaseEditor(p: Props) {
             </div>
           </div>
           <span className="spacer" />
+          <div className="editor-progress" title="بخش‌های ضروری تکمیل‌شده">
+            <div className="bar"><span style={{ width: `${(doneCount / REQUIRED.length) * 100}%` }} /></div>
+            <small>{doneCount.toLocaleString("fa-IR")} از {REQUIRED.length.toLocaleString("fa-IR")} بخش ضروری</small>
+          </div>
           <span className={`save-state${dirty ? " dirty" : ""}`}>
             {saving ? "در حال ذخیره…" : saveErr ? <span style={{ color: "var(--danger)" }}>{saveErr}</span> : dirty ? "تغییرات ذخیره نشده" : savedAt ? `ذخیره شد · ${savedAt.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" })}` : "همه‌ی تغییرات ذخیره است"}
           </span>
@@ -187,7 +198,8 @@ export function CaseEditor(p: Props) {
           {SECTIONS.map(([id, label], i) => (
             <a key={id} href={`#${id}`} className={doneSections[id] ? "done" : ""}>
               <span className="n">{doneSections[id] ? <Icon name="check" size={12} /> : (i + 1).toLocaleString("fa-IR")}</span>
-              {label}
+              {id === "dx" ? (challenge ? "پرسش و پاسخ" : "تشخیص") : label}
+              {OPTIONAL.has(id) && <em className="opt">اختیاری</em>}
             </a>
           ))}
         </nav>
@@ -203,6 +215,49 @@ export function CaseEditor(p: Props) {
           )}
 
           <fieldset disabled={locked} style={{ border: 0, padding: 0, margin: 0, display: "contents" }}>
+            {/* ۰ نوع مورد و گفت‌وگو */}
+            <section className="editor-section" id="setup">
+              <header><h2>این مورد را چگونه ارائه می‌کنید؟</h2><p>هر زمان تا پیش از انتشار می‌توانید این انتخاب‌ها را تغییر دهید.</p></header>
+              <div className="body">
+                <div className="mode-cards" role="radiogroup" aria-label="نوع مورد">
+                  <button type="button" role="radio" aria-checked={challenge} className="mode-card" onClick={() => set("mode", "UNKNOWN")}>
+                    <span className="mc-icon"><Icon name="lock" size={22} /></span>
+                    <b>مورد چالشی</b>
+                    <span>پزشکان ابتدا تصاویر و یافته‌ها را بررسی و تشخیص خود را ثبت می‌کنند؛ سپس پاسخ شما و آمار پاسخ همکاران را می‌بینند.</span>
+                    <span className="mc-flow"><em>بررسی</em><Icon name="chevronLeft" size={14} /><em>ثبت تشخیص</em><Icon name="chevronLeft" size={14} /><em>نمایش پاسخ</em></span>
+                  </button>
+                  <button type="button" role="radio" aria-checked={!challenge} className="mode-card" onClick={() => set("mode", "TEACHING")}>
+                    <span className="mc-icon"><Icon name="book" size={22} /></span>
+                    <b>مورد آموزشی</b>
+                    <span>تشخیص و توضیحات شما از ابتدا نمایش داده می‌شود؛ مناسب مرور یک موجودیت یا یک نکته‌ی ریخت‌شناسی.</span>
+                    <span className="mc-flow"><em>مشاهده‌ی مورد و پاسخ</em></span>
+                  </button>
+                </div>
+                <label className="switch-row">
+                  <span className="switch"><input type="checkbox" checked={f.commentsEnabled} onChange={(e) => set("commentsEnabled", e.target.checked)} /><span /></span>
+                  <span>
+                    <b>گفت‌وگوی پزشکان {f.commentsEnabled ? "باز است" : "بسته است"}</b>
+                    <small>
+                      {f.commentsEnabled
+                        ? challenge
+                          ? "پزشکان پس از ثبت تشخیص می‌توانند نظر، پرسش یا تشخیص افتراقی خود را بنویسند."
+                          : "پزشکان می‌توانند زیر این مورد نظر و پرسش خود را بنویسند."
+                        : "فقط محتوای مورد نمایش داده می‌شود و کسی نمی‌تواند نظر بنویسد."}
+                    </small>
+                  </span>
+                </label>
+                {challenge && (
+                  <label className="switch-row">
+                    <span className="switch"><input type="checkbox" checked={f.showIhcBeforeAnswer} onChange={(e) => set("showIhcBeforeAnswer", e.target.checked)} /><span /></span>
+                    <span>
+                      <b>نتایج IHC و مولکولی پیش از پاسخ {f.showIhcBeforeAnswer ? "نمایش داده می‌شود" : "پنهان است"}</b>
+                      <small>اگر پنل IHC تشخیص را آشکار می‌کند، این گزینه را خاموش کنید تا نتایج پس از ثبت تشخیص نمایش داده شوند.</small>
+                    </span>
+                  </label>
+                )}
+              </div>
+            </section>
+
             {/* ۱ مشخصات */}
             <section className="editor-section" id="info">
               <header><h2>مشخصات مورد</h2><p>اطلاعاتی که در فهرست موارد و بالای صفحه‌ی مورد نمایش داده می‌شود.</p></header>
@@ -210,20 +265,7 @@ export function CaseEditor(p: Props) {
                 <div className="field">
                   <label className="req" htmlFor="title">عنوان</label>
                   <input id="title" className="input" {...bind("title")} placeholder="مثلاً: توده‌ی بدون درد زیر فک در مرد ۵۲ ساله" maxLength={160} />
-                  <span className="hint">نحوه‌ی مراجعه‌ی بیمار را بنویسید، نه تشخیص را. عنوان پیش از بخش پرسش دیده می‌شود.</span>
-                </div>
-                <div className="field">
-                  <span className="label">نوع مورد</span>
-                  <div className="radio-cards">
-                    <label className="radio-card">
-                      <input type="radio" name="mode" checked={f.mode === "UNKNOWN"} onChange={() => set("mode", "UNKNOWN")} />
-                      <span><b>مورد ناشناس (پرسشی)</b><small>تشخیص تا ثبت پاسخ خواننده پنهان است. مناسب موارد دشوار.</small></span>
-                    </label>
-                    <label className="radio-card">
-                      <input type="radio" name="mode" checked={f.mode === "TEACHING"} onChange={() => set("mode", "TEACHING")} />
-                      <span><b>مورد آموزشی</b><small>تشخیص از ابتدا نمایش داده می‌شود. مناسب مرور یک موجودیت.</small></span>
-                    </label>
-                  </div>
+                  <span className="hint">{challenge ? "نحوه‌ی مراجعه‌ی بیمار را بنویسید، نه تشخیص را؛ عنوان پیش از ثبت پاسخ دیده می‌شود." : "یک عنوان کوتاه و گویا؛ مثلاً نحوه‌ی مراجعه یا نام موجودیت."}</span>
                 </div>
                 <div className="grid-3">
                   <div className="field">
@@ -270,7 +312,7 @@ export function CaseEditor(p: Props) {
                 <div className="field">
                   <span className="label">کلیدواژه‌ها</span>
                   <ListEditor items={f.keywords} onChange={(v) => set("keywords", v)} placeholder="مثلاً: spindle cell" addLabel="افزودن کلیدواژه" inline />
-                  <span className="hint">برای جست‌وجو. کلیدواژه نباید تشخیص مورد ناشناس را آشکار کند.</span>
+                  <span className="hint">برای یافتن مورد در جست‌وجو{challenge ? "؛ کلیدواژه نباید تشخیص را آشکار کند." : "."}</span>
                 </div>
               </div>
             </section>
@@ -310,7 +352,7 @@ export function CaseEditor(p: Props) {
                 <div className="field">
                   <label className="req" htmlFor="micro">یافته‌های میکروسکوپی</label>
                   <textarea id="micro" className="textarea tall" {...bind("microscopic")} />
-                  <span className="hint">در مورد ناشناس، یافته‌ها را توصیف کنید بی‌آنکه نام موجودیت را بیاورید.</span>
+                  {challenge && <span className="hint">یافته‌ها را توصیف کنید بی‌آنکه نام موجودیت را بیاورید.</span>}
                 </div>
               </div>
             </section>
@@ -333,10 +375,6 @@ export function CaseEditor(p: Props) {
                   ))}
                   <div><button type="button" className="btn btn-secondary btn-sm" onClick={() => set("ihc", [...f.ihc, { marker: "", outcome: "POSITIVE", pattern: "", note: "" }])}><Icon name="plus" /> افزودن مارکر</button></div>
                 </div>
-                <label className="check">
-                  <input type="checkbox" checked={f.showIhcBeforeAnswer} onChange={(e) => set("showIhcBeforeAnswer", e.target.checked)} />
-                  <span>نتایج IHC و مولکولی پیش از پاسخ نمایش داده شود<small>اگر نتایج IHC عملاً تشخیص را آشکار می‌کند، این گزینه را غیرفعال کنید تا نتایج بعد از پاسخ خواننده نمایش داده شوند.</small></span>
-                </label>
                 <div className="field">
                   <label htmlFor="mol">یافته‌های مولکولی / سیتوژنتیک</label>
                   <textarea id="mol" className="textarea" {...bind("molecular")} placeholder="FISH، NGS، PCR…" />
@@ -346,23 +384,34 @@ export function CaseEditor(p: Props) {
 
             {/* ۶ تشخیص */}
             <section className="editor-section" id="dx">
-              <header><h2>پرسش و تشخیص</h2><p>تشخیص و تشخیص‌های افتراقی فقط پس از پاسخ خواننده به مرورگر او فرستاده می‌شوند.</p></header>
+              <header>
+                <h2>{challenge ? "پرسش و پاسخ" : "تشخیص"}</h2>
+                <p>{challenge ? "تشخیص و تشخیص‌های افتراقی فقط پس از ثبت پاسخ پزشک به مرورگر او فرستاده می‌شوند." : "تشخیص نهایی و تشخیص‌های افتراقی مورد."}</p>
+              </header>
               <div className="body">
+{challenge && (
+<>
                 <div className="field">
                   <label htmlFor="q">پرسش</label>
                   <input id="q" className="input" {...bind("question")} placeholder="تشخیص شما چیست؟" />
                   <span className="hint">اختیاری؛ مثلاً «مهم‌ترین تشخیص افتراقی کدام است؟»</span>
                 </div>
+</>
+)}
                 <div className="field">
                   <label className="req" htmlFor="fdx">تشخیص نهایی</label>
                   <input id="fdx" className="input input-ltr" {...bind("finalDiagnosis")} placeholder="Invasive lobular carcinoma, classic type" />
                   <span className="hint">ترجیحاً به انگلیسی و مطابق طبقه‌بندی WHO.</span>
                 </div>
+{challenge && (
+<>
                 <div className="field">
                   <span className="label">معادل‌های قابل‌قبول</span>
                   <ListEditor items={f.diagnosisAliases} onChange={(v) => set("diagnosisAliases", v)} placeholder="ILC" addLabel="افزودن معادل" ltr />
                   <span className="hint">پاسخ‌هایی که باید صحیح شناخته شوند (مخفف، نام قدیمی، معادل فارسی). سامانه ترتیب واژه‌ها، املای بریتانیایی و مخفف‌های رایج را به‌طور خودکار تشخیص می‌دهد.</span>
                 </div>
+</>
+)}
                 <div className="field">
                   <span className="label">تشخیص‌های افتراقی</span>
                   <div className="rows">

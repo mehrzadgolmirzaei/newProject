@@ -12,7 +12,7 @@ import { fail, done, type ActionResult } from "@/lib/result";
 
 const NEED_ACTIVE = "برای این کار باید حساب شما تأیید شده باشد.";
 
-// ─── پاسخ به مورد ناشناس ─────────────────────────────────────────────────
+// ─── پاسخ به مورد چالشی ─────────────────────────────────────────────────
 
 const attemptSchema = z.object({
   caseId: z.string().min(1),
@@ -85,13 +85,14 @@ export async function postComment(input: z.input<typeof commentSchema>): Promise
   const r = await hit(`comment:${user!.id}`, 8, 60);
   if (!r.ok) return fail("تعداد درخواست‌ها بیش از حد مجاز است. لطفاً چند لحظه بعد دوباره تلاش کنید.");
 
-  const c = await db.case.findUnique({ where: { id: p.data.caseId }, select: { id: true, number: true, status: true, mode: true, authorId: true } });
+  const c = await db.case.findUnique({ where: { id: p.data.caseId }, select: { id: true, number: true, status: true, mode: true, authorId: true, commentsEnabled: true } });
   if (!c || c.status !== "PUBLISHED") return fail("این مورد در دسترس نیست.");
+  if (!c.commentsEnabled && !canModerateCase(user, c)) return fail("گفت‌وگو برای این مورد بسته است.");
 
-  // در مورد ناشناس، بحث پس از ثبت پاسخ باز می‌شود تا کسی جواب را لو ندهد
+  // در مورد چالشی، بحث پس از ثبت پاسخ باز می‌شود تا کسی جواب را لو ندهد
   if (c.mode === "UNKNOWN" && !canModerateCase(user, c)) {
     const attempted = await db.attempt.findUnique({ where: { userId_caseId: { userId: user!.id, caseId: c.id } }, select: { id: true } });
-    if (!attempted) return fail("ابتدا پاسخ خود را ثبت کنید؛ سپس بحث برایتان باز می‌شود.");
+    if (!attempted) return fail("ابتدا تشخیص خود را ثبت کنید؛ سپس بخش نظرات برای شما باز می‌شود.");
   }
 
   let parentId: string | null = null;

@@ -44,7 +44,7 @@ export async function saveCase(caseId: string, input: CaseForm): Promise<ActionR
         difficulty: f.difficulty, mode: f.mode, patientAge: f.patientAge, patientSex: f.patientSex, keywords: f.keywords,
         clinicalHistory: f.clinicalHistory, imaging: f.imaging, gross: f.gross, microscopic: f.microscopic, molecular: f.molecular,
         question: f.question, finalDiagnosis: f.finalDiagnosis, diagnosisAliases: f.diagnosisAliases,
-        showIhcBeforeAnswer: f.showIhcBeforeAnswer, discussion: f.discussion, teachingPoints: f.teachingPoints,
+        showIhcBeforeAnswer: f.showIhcBeforeAnswer, commentsEnabled: f.commentsEnabled, discussion: f.discussion, teachingPoints: f.teachingPoints,
         references: f.references,
         deidConfirmedAt: f.deidConfirmed ? new Date() : null,
       },

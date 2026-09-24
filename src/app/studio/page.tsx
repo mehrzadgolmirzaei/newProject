@@ -44,6 +44,12 @@ export default async function Studio({ searchParams }: { searchParams: Promise<{
         <form action={createDraft}><button className="btn btn-primary"><Icon name="plus" /> مورد جدید</button></form>
       </div>
 
+      <ol className="studio-guide">
+        <li><span>۱</span><div><b>مورد جدید بسازید</b><small>نوع مورد (چالشی یا آموزشی) و باز یا بسته بودن گفت‌وگو را انتخاب کنید.</small></div></li>
+        <li><span>۲</span><div><b>اطلاعات و تصاویر را وارد کنید</b><small>بخش‌های ضروری علامت دارند؛ همه‌چیز خودکار ذخیره می‌شود.</small></div></li>
+        <li><span>۳</span><div><b>{u.trusted || u.role === "ADMIN" ? "منتشر کنید" : "برای بازبینی بفرستید"}</b><small>{u.trusted || u.role === "ADMIN" ? "مورد بلافاصله برای پزشکان نمایش داده می‌شود." : "پس از تأیید مدیر، مورد برای پزشکان نمایش داده می‌شود."}</small></div></li>
+      </ol>
+
       <div className="seg" style={{ marginBottom: 16 }}>
         <Link href="/studio" aria-current={!filter}>همه ({num(total)})</Link>
         {(["DRAFT", "IN_REVIEW", "PUBLISHED", "ARCHIVED"] as const).map((st) => (

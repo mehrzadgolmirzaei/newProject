@@ -34,6 +34,7 @@ export const caseFormSchema = z.object({
   finalDiagnosis: text(300),
   diagnosisAliases: list(12, 200),
   showIhcBeforeAnswer: z.boolean().default(true),
+  commentsEnabled: z.boolean().default(true),
 
   discussion: text(20000),
   teachingPoints: list(12, 400),

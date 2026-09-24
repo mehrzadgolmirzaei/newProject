@@ -55,7 +55,7 @@ export default async function Library({ searchParams }: { searchParams: Promise<
     f.q && { label: `«${f.q}»`, clear: { q: undefined } },
     f.sub && { label: subspecialtyFa(f.sub), clear: { sub: undefined } },
     f.difficulty && { label: DIFFICULTY[f.difficulty], clear: { difficulty: undefined } },
-    f.mode && { label: f.mode === "UNKNOWN" ? "ناشناس" : "آموزشی", clear: { mode: undefined } },
+    f.mode && { label: f.mode === "UNKNOWN" ? "چالشی" : "آموزشی", clear: { mode: undefined } },
     f.specimen && { label: SPECIMEN[f.specimen], clear: { specimen: undefined } },
     f.status && { label: f.status === "solved" ? "حل‌شده توسط من" : "حل‌نشده توسط من", clear: { status: undefined } },
   ].filter(Boolean) as { label: string; clear: Record<string, undefined> }[];
@@ -66,7 +66,7 @@ export default async function Library({ searchParams }: { searchParams: Promise<
     <div className="wrap">
       <div className="page-head">
         <h1>{f.sub ? subspecialtyFa(f.sub) : "کتابخانه‌ی موارد"}</h1>
-        <p>موارد ناشناس را حل کنید یا موارد آموزشی را مرور کنید. جست‌وجو در عنوان، اندام، شرح حال و یافته‌ها انجام می‌شود؛ تشخیص موارد ناشناس هرگز در نتایج جست‌وجو اثر ندارد.</p>
+        <p>موارد چالشی را حل کنید یا موارد آموزشی را مرور کنید. جست‌وجو در عنوان، اندام، شرح حال و یافته‌ها انجام می‌شود؛ تشخیص موارد چالشی هرگز در نتایج جست‌وجو اثر ندارد.</p>
       </div>
 
       <div className="library">
@@ -86,7 +86,7 @@ export default async function Library({ searchParams }: { searchParams: Promise<
             <h3>نوع مورد</h3>
             <div className="seg">
               <Link href={href({ mode: undefined })} aria-current={!f.mode}>همه</Link>
-              <Link href={href({ mode: "UNKNOWN" })} aria-current={f.mode === "UNKNOWN"}>ناشناس</Link>
+              <Link href={href({ mode: "UNKNOWN" })} aria-current={f.mode === "UNKNOWN"}>چالشی</Link>
               <Link href={href({ mode: "TEACHING" })} aria-current={f.mode === "TEACHING"}>آموزشی</Link>
             </div>
           </div>

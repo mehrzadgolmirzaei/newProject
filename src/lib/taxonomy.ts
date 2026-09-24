@@ -67,7 +67,7 @@ export const CASE_STATUS: Record<CaseStatus, string> = {
 };
 
 export const CASE_MODE: Record<CaseMode, { fa: string; hint: string }> = {
-  UNKNOWN: { fa: "مورد ناشناس", hint: "تشخیص تا پیش از ثبت پاسخ مخفی است" },
+  UNKNOWN: { fa: "مورد چالشی", hint: "تشخیص تا پیش از ثبت پاسخ مخفی است" },
   TEACHING: { fa: "مورد آموزشی", hint: "تشخیص از ابتدا نمایش داده می‌شود" },
 };
 

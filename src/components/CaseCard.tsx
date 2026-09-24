@@ -17,7 +17,7 @@ export function CaseCard({ c }: { c: Card }) {
         )}
         <div className="thumb-tags">
           <span className="thumb-tag">
-            {c.mode === "UNKNOWN" ? (c.solved ? <><Icon name="check" /> حل‌شده</> : <><Icon name="lock" /> ناشناس</>) : <><Icon name="book" /> آموزشی</>}
+            {c.mode === "UNKNOWN" ? (c.solved ? <><Icon name="check" /> حل‌شده</> : <><Icon name="lock" /> چالشی</>) : <><Icon name="book" /> آموزشی</>}
           </span>
           {c.images > 1 && <span className="thumb-tag"><Icon name="layers" /> {faDigits(c.images)}</span>}
         </div>

@@ -182,7 +182,7 @@ function MediaRow({ m, first, last, onMove, onDelete, onRetry, onAnnotate }: {
         <div className="fields">
           <input className="input input-ltr" list="stains" placeholder="Stain (H&E, CD34…)" value={f.stain} onChange={(e) => setF({ ...f, stain: e.target.value })} onBlur={commit} />
           <input className="input input-ltr" list="mags" placeholder="×40" value={f.magnification} onChange={(e) => setF({ ...f, magnification: e.target.value })} onBlur={commit} />
-          <input className="input wide" placeholder="توضیح تصویر (اختیاری) — در مورد ناشناس، تشخیص را ننویسید" value={f.caption} onChange={(e) => setF({ ...f, caption: e.target.value })} onBlur={commit} dir="auto" />
+          <input className="input wide" placeholder="توضیح تصویر (اختیاری) — در مورد چالشی، تشخیص را ننویسید" value={f.caption} onChange={(e) => setF({ ...f, caption: e.target.value })} onBlur={commit} dir="auto" />
         </div>
         <div className="row gap-8" style={{ fontSize: 12.5, color: "var(--muted)", flexWrap: "wrap" }}>
           {m.kind === "WSI" && <span className="badge badge-accent">اسلاید کامل</span>}

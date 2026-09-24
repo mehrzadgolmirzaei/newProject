@@ -121,7 +121,7 @@ export function searchWhere(q: string): Prisma.CaseWhereInput {
       { clinicalHistory: has },
       { microscopic: has },
       { keywords: { has: term.toLowerCase() } },
-      // تشخیص فقط در موارد آموزشی جست‌وجو می‌شود تا پاسخ موارد ناشناس لو نرود
+      // تشخیص فقط در موارد آموزشی جست‌وجو می‌شود تا پاسخ موارد چالشی لو نرود
       { AND: [{ mode: "TEACHING" }, { OR: [{ finalDiagnosis: has }, { discussion: has }] }] },
     ],
   };
@@ -255,6 +255,7 @@ export async function getCaseView(number: number, user: CurrentUser | null) {
     number: c.number,
     status: c.status,
     mode: c.mode,
+    commentsEnabled: c.commentsEnabled,
     isDemo: c.isDemo,
     title: c.title,
     subspecialty: c.subspecialty,

@@ -304,11 +304,12 @@ export default async function CasePage({ params }: Params) {
             </section>
           )}
 
-          {c.status === "PUBLISHED" && (
+          {c.status === "PUBLISHED" && (c.commentsEnabled || thread.length > 0 || v.moderator) && (
             <Discussion
               nodes={thread as unknown as CommentNode[]}
-              ctx={{ caseId: c.id, meId: user?.id ?? null, canPost: participate && v.revealed, canModerate: v.moderator, caseAuthorId: c.author.id }}
+              ctx={{ caseId: c.id, meId: user?.id ?? null, canPost: participate && v.revealed && (c.commentsEnabled || v.moderator), canModerate: v.moderator, caseAuthorId: c.author.id }}
               blocked={!v.revealed ? "نظرات همکاران پس از ثبت تشخیص شما نمایش داده می‌شود تا پاسخ پیش از موعد آشکار نشود." : undefined}
+              closed={!c.commentsEnabled}
             />
           )}
 

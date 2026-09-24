@@ -170,6 +170,8 @@ model Case {
   finalDiagnosis     String   @default("")
   diagnosisAliases   String[] @default([]) // معادل‌های قابل‌قبول برای تطبیق خودکار پاسخ
   showIhcBeforeAnswer Boolean @default(true)
+  // گفت‌وگوی پزشکان زیر مورد باز باشد یا نه (به انتخاب ارائه‌دهنده)
+  commentsEnabled     Boolean @default(true)
 
   // آموزش
   discussion     String   @default("")
