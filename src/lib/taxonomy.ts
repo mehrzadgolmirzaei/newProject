@@ -27,6 +27,11 @@ export const SUBSPECIALTIES: Subspecialty[] = [
 
 export const subspecialty = (key: string) => SUBSPECIALTIES.find((s) => s.key === key);
 export const subspecialtyFa = (key: string) => subspecialty(key)?.fa ?? "—";
+/** نام زیرتخصص به زبان جاری */
+export const subspecialtyLabel = (key: string, locale: "fa" | "en") => {
+  const s = subspecialty(key);
+  return s ? (locale === "en" ? s.en : s.fa) : "—";
+};
 
 export const DIFFICULTY: Record<Difficulty, string> = {
   BASIC: "پایه",

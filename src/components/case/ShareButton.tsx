@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { Icon } from "../Icon";
+import { useI18n } from "../LocaleProvider";
 
 export function ShareButton({ title }: { title: string }) {
   const [copied, setCopied] = useState(false);
+  const { t } = useI18n();
   return (
     <button
       className="btn btn-ghost btn-sm"
@@ -18,7 +20,7 @@ export function ShareButton({ title }: { title: string }) {
         setTimeout(() => setCopied(false), 1800);
       }}
     >
-      <Icon name={copied ? "check" : "external"} /> {copied ? "پیوند کپی شد" : "اشتراک"}
+      <Icon name={copied ? "check" : "external"} /> {copied ? t("پیوند کپی شد") : t("اشتراک")}
     </button>
   );
 }

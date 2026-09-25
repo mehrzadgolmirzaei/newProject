@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { redirect } from "next/navigation";
+import Link from "@/components/Link";
 import type { CaseMode, Difficulty, SpecimenType } from "@prisma/client";
 import { canBrowse, getUser } from "@/lib/auth";
 import { listCases, subspecialtyCounts, type CaseFilters } from "@/lib/cases";
-import { DIFFICULTY, SPECIMEN, SUBSPECIALTIES, subspecialtyFa } from "@/lib/taxonomy";
-import { faDigits } from "@/lib/text";
-import { num } from "@/lib/format";
+import { DIFFICULTY, SPECIMEN, SUBSPECIALTIES, subspecialty, subspecialtyLabel } from "@/lib/taxonomy";
+import { getI18n, lredirect } from "@/lib/i18n/server";
+import { pageMeta } from "@/lib/seo";
 import { CaseCard } from "@/components/CaseCard";
 import { Pager } from "@/components/Pager";
 import { Empty } from "@/components/Empty";
@@ -18,8 +17,20 @@ type SP = Record<string, string | undefined>;
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<SP> }): Promise<Metadata> {
   const sp = await searchParams;
-  const sub = sp.sub ? subspecialtyFa(sp.sub) : null;
-  return { title: sub && sub !== "—" ? `موارد ${sub}` : "کتابخانه‌ی موارد", alternates: { canonical: "/cases" } };
+  const { locale, t } = await getI18n();
+  const sub = sp.sub && subspecialty(sp.sub) ? sp.sub : null;
+  const label = sub ? subspecialtyLabel(sub, locale) : null;
+  // فقط صفحه‌ی اصلی کتابخانه و صفحه‌ی هر زیرتخصص ایندکس می‌شوند؛ جست‌وجو و پالایه‌های ترکیبی نه
+  const filtered = ["q", "difficulty", "mode", "specimen", "status", "sort"].some((k) => sp[k]);
+  return pageMeta({
+    locale,
+    path: sub ? `/cases?sub=${sub}` : "/cases",
+    title: label ? t("موارد پاتولوژی {sub}", { sub: label }) : t("کتابخانه‌ی موارد"),
+    description: label
+      ? t("موارد دشوار و آموزشی پاتولوژی {sub} با شرح حال، تصاویر میکروسکوپی، ایمونوهیستوشیمی و بحث تخصصی.", { sub: label })
+      : t("کتابخانه‌ی موارد دشوار پاتولوژی: موارد چالشی برای ثبت تشخیص و موارد آموزشی با تصاویر میکروسکوپی و بحث تخصصی."),
+    noindex: filtered,
+  });
 }
 
 const pick = <T extends string>(v: string | undefined, allowed: readonly T[]) => (allowed.includes(v as T) ? (v as T) : undefined);
@@ -27,7 +38,8 @@ const pick = <T extends string>(v: string | undefined, allowed: readonly T[]) =>
 export default async function Library({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
   const user = await getUser();
-  if (!canBrowse(user)) redirect("/login?next=/cases");
+  if (!canBrowse(user)) return lredirect("/login?next=/cases");
+  const { t, f: fm, locale, lp } = await getI18n();
 
   const f: CaseFilters = {
     q: sp.q?.slice(0, 100),
@@ -53,11 +65,11 @@ export default async function Library({ searchParams }: { searchParams: Promise<
   };
   const chips = [
     f.q && { label: `«${f.q}»`, clear: { q: undefined } },
-    f.sub && { label: subspecialtyFa(f.sub), clear: { sub: undefined } },
-    f.difficulty && { label: DIFFICULTY[f.difficulty], clear: { difficulty: undefined } },
-    f.mode && { label: f.mode === "UNKNOWN" ? "چالشی" : "آموزشی", clear: { mode: undefined } },
-    f.specimen && { label: SPECIMEN[f.specimen], clear: { specimen: undefined } },
-    f.status && { label: f.status === "solved" ? "حل‌شده توسط من" : "حل‌نشده توسط من", clear: { status: undefined } },
+    f.sub && { label: subspecialtyLabel(f.sub, locale), clear: { sub: undefined } },
+    f.difficulty && { label: t(DIFFICULTY[f.difficulty]), clear: { difficulty: undefined } },
+    f.mode && { label: f.mode === "UNKNOWN" ? t("چالشی") : t("آموزشی"), clear: { mode: undefined } },
+    f.specimen && { label: t(SPECIMEN[f.specimen]), clear: { specimen: undefined } },
+    f.status && { label: f.status === "solved" ? t("حل‌شده توسط من") : t("حل‌نشده توسط من"), clear: { status: undefined } },
   ].filter(Boolean) as { label: string; clear: Record<string, undefined> }[];
 
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
@@ -65,57 +77,57 @@ export default async function Library({ searchParams }: { searchParams: Promise<
   return (
     <div className="wrap">
       <div className="page-head">
-        <h1>{f.sub ? subspecialtyFa(f.sub) : "کتابخانه‌ی موارد"}</h1>
-        <p>موارد چالشی را حل کنید یا موارد آموزشی را مرور کنید. جست‌وجو در عنوان، اندام، شرح حال و یافته‌ها انجام می‌شود؛ تشخیص موارد چالشی هرگز در نتایج جست‌وجو اثر ندارد.</p>
+        <h1>{f.sub ? subspecialtyLabel(f.sub, locale) : t("کتابخانه‌ی موارد")}</h1>
+        <p>{t("موارد چالشی را حل کنید یا موارد آموزشی را مرور کنید. جست‌وجو در عنوان، اندام، شرح حال و یافته‌ها انجام می‌شود؛ تشخیص موارد چالشی هرگز در نتایج جست‌وجو اثر ندارد.")}</p>
       </div>
 
       <div className="library">
-        <aside className="filters" aria-label="پالایش">
+        <aside className="filters" aria-label={t("پالایش")}>
           <div className="filter-group">
-            <h3>زیرتخصص</h3>
+            <h3>{t("زیرتخصص")}</h3>
             <div className="filter-list">
-              <Link href={href({ sub: undefined })} aria-current={!f.sub}>همه <small>{num(total)}</small></Link>
+              <Link href={href({ sub: undefined })} aria-current={!f.sub}>{t("همه")} <small>{fm.num(total)}</small></Link>
               {SUBSPECIALTIES.filter((s) => counts[s.key]).map((s) => (
                 <Link key={s.key} href={href({ sub: s.key })} aria-current={f.sub === s.key}>
-                  {s.fa} <small>{num(counts[s.key])}</small>
+                  {locale === "en" ? s.en : s.fa} <small>{fm.num(counts[s.key])}</small>
                 </Link>
               ))}
             </div>
           </div>
           <div className="filter-group">
-            <h3>نوع مورد</h3>
+            <h3>{t("نوع مورد")}</h3>
             <div className="seg">
-              <Link href={href({ mode: undefined })} aria-current={!f.mode}>همه</Link>
-              <Link href={href({ mode: "UNKNOWN" })} aria-current={f.mode === "UNKNOWN"}>چالشی</Link>
-              <Link href={href({ mode: "TEACHING" })} aria-current={f.mode === "TEACHING"}>آموزشی</Link>
+              <Link href={href({ mode: undefined })} aria-current={!f.mode}>{t("همه")}</Link>
+              <Link href={href({ mode: "UNKNOWN" })} aria-current={f.mode === "UNKNOWN"}>{t("چالشی")}</Link>
+              <Link href={href({ mode: "TEACHING" })} aria-current={f.mode === "TEACHING"}>{t("آموزشی")}</Link>
             </div>
           </div>
           <div className="filter-group">
-            <h3>سطح</h3>
+            <h3>{t("سطح")}</h3>
             <div className="seg">
-              <Link href={href({ difficulty: undefined })} aria-current={!f.difficulty}>همه</Link>
+              <Link href={href({ difficulty: undefined })} aria-current={!f.difficulty}>{t("همه")}</Link>
               {(["BASIC", "INTERMEDIATE", "ADVANCED"] as const).map((d) => (
-                <Link key={d} href={href({ difficulty: d })} aria-current={f.difficulty === d}>{DIFFICULTY[d]}</Link>
+                <Link key={d} href={href({ difficulty: d })} aria-current={f.difficulty === d}>{t(DIFFICULTY[d])}</Link>
               ))}
             </div>
           </div>
           <div className="filter-group">
-            <h3>نوع نمونه</h3>
+            <h3>{t("نوع نمونه")}</h3>
             <div className="filter-list">
-              <Link href={href({ specimen: undefined })} aria-current={!f.specimen}>همه</Link>
+              <Link href={href({ specimen: undefined })} aria-current={!f.specimen}>{t("همه")}</Link>
               {(Object.keys(SPECIMEN) as SpecimenType[]).map((k) => (
-                <Link key={k} href={href({ specimen: k })} aria-current={f.specimen === k}>{SPECIMEN[k]}</Link>
+                <Link key={k} href={href({ specimen: k })} aria-current={f.specimen === k}>{t(SPECIMEN[k])}</Link>
               ))}
             </div>
           </div>
         </aside>
 
         <div>
-          <form className="search-lg" action="/cases" role="search">
+          <form className="search-lg" action={lp("/cases")} role="search">
             <Icon name="search" />
             {Object.entries(current).map(([k, v]) => (k !== "q" && v ? <input key={k} type="hidden" name={k} value={v} /> : null))}
-            <input name="q" defaultValue={f.q} placeholder="مثلاً: توده‌ی پستان، CK7، سلول‌های دوکی…" aria-label="جست‌وجو" />
-            <button className="btn btn-primary btn-sm" type="submit">جست‌وجو</button>
+            <input name="q" defaultValue={f.q} placeholder={t("مثلاً: توده‌ی پستان، CK7، سلول‌های دوکی…")} aria-label={t("جست‌وجو")} />
+            <button className="btn btn-primary btn-sm" type="submit">{t("جست‌وجو")}</button>
           </form>
 
           {chips.length > 0 && (
@@ -123,30 +135,30 @@ export default async function Library({ searchParams }: { searchParams: Promise<
               {chips.map((c) => (
                 <Link key={c.label} href={href(c.clear)} className="badge badge-outline">{c.label} <Icon name="x" /></Link>
               ))}
-              <Link href="/cases" className="badge" style={{ background: "none", color: "var(--muted)" }}>پاک‌کردن همه</Link>
+              <Link href="/cases" className="badge" style={{ background: "none", color: "var(--muted)" }}>{t("پاک‌کردن همه")}</Link>
             </div>
           )}
 
           <div className="toolbar">
-            <span className="count">{faDigits(res.total)} مورد</span>
+            <span className="count">{t("{n} مورد", { n: fm.digits(res.total) })}</span>
             <span className="spacer" />
             {user && (
               <div className="seg">
-                <Link href={href({ status: undefined })} aria-current={!f.status}>همه</Link>
-                <Link href={href({ status: "unsolved" })} aria-current={f.status === "unsolved"}>حل‌نشده</Link>
-                <Link href={href({ status: "solved" })} aria-current={f.status === "solved"}>حل‌شده</Link>
+                <Link href={href({ status: undefined })} aria-current={!f.status}>{t("همه")}</Link>
+                <Link href={href({ status: "unsolved" })} aria-current={f.status === "unsolved"}>{t("حل‌نشده")}</Link>
+                <Link href={href({ status: "solved" })} aria-current={f.status === "solved"}>{t("حل‌شده")}</Link>
               </div>
             )}
             <div className="seg">
-              <Link href={href({ sort: undefined })} aria-current={f.sort === "new"}>جدیدترین</Link>
-              <Link href={href({ sort: "attempted" })} aria-current={f.sort === "attempted"}>پرپاسخ‌ترین</Link>
-              <Link href={href({ sort: "discussed" })} aria-current={f.sort === "discussed"}>پربحث‌ترین</Link>
+              <Link href={href({ sort: undefined })} aria-current={f.sort === "new"}>{t("جدیدترین")}</Link>
+              <Link href={href({ sort: "attempted" })} aria-current={f.sort === "attempted"}>{t("پرپاسخ‌ترین")}</Link>
+              <Link href={href({ sort: "discussed" })} aria-current={f.sort === "discussed"}>{t("پربحث‌ترین")}</Link>
             </div>
           </div>
 
           {res.cases.length === 0 ? (
-            <Empty icon="search" title="موردی پیدا نشد" text={chips.length ? "پالایه‌ها را کمتر کنید یا عبارت دیگری جست‌وجو کنید." : "هنوز موردی منتشر نشده است."}>
-              {chips.length > 0 && <Link href="/cases" className="btn btn-secondary">نمایش همه‌ی موارد</Link>}
+            <Empty icon="search" title={t("موردی پیدا نشد")} text={chips.length ? t("پالایه‌ها را کمتر کنید یا عبارت دیگری جست‌وجو کنید.") : t("هنوز موردی منتشر نشده است.")}>
+              {chips.length > 0 && <Link href="/cases" className="btn btn-secondary">{t("نمایش همه‌ی موارد")}</Link>}
             </Empty>
           ) : (
             <>

@@ -1,12 +1,19 @@
 import type { MetadataRoute } from "next";
-import { env } from "@/lib/env";
+import { absUrl } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
+const PRIVATE = ["/admin", "/studio", "/account", "/login", "/onboarding"];
+
 export default function robots(): MetadataRoute.Robots {
-  const base = env.SITE_URL.replace(/\/$/, "");
   return {
-    rules: [{ userAgent: "*", allow: "/", disallow: ["/admin", "/studio", "/account", "/login", "/onboarding", "/api"] }],
-    sitemap: `${base}/sitemap.xml`,
+    rules: [
+      {
+        userAgent: "*",
+        allow: ["/", "/media/"],
+        disallow: [...PRIVATE, ...PRIVATE.map((p) => `/en${p}`), "/api/", "/fa/"],
+      },
+    ],
+    sitemap: absUrl("/sitemap.xml"),
   };
 }

@@ -30,6 +30,10 @@ const schema = z
     S3_SECRET_KEY: z.string().default(""),
     MEDIA_PUBLIC_URL: z.string().default(""),
 
+    // تأیید مالکیت در Google Search Console و Bing Webmaster (اختیاری)
+    GOOGLE_SITE_VERIFICATION: z.string().default(""),
+    BING_SITE_VERIFICATION: z.string().default(""),
+
     MAX_UPLOAD_MB: z.coerce.number().int().positive().default(4096),
     VIPS_BIN: z.string().default(""),
   })

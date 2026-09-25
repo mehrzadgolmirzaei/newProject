@@ -1,15 +1,16 @@
-import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { AUDIT_LABEL } from "@/lib/audit";
-import { faDateTime } from "@/lib/format";
+import { privateMeta } from "@/lib/seo";
+import { getI18n } from "@/lib/i18n/server";
 import { Pager } from "@/components/Pager";
 
-export const metadata: Metadata = { title: "گزارش رویدادها", robots: { index: false } };
+export const generateMetadata = () => privateMeta("گزارش رویدادها");
 export const dynamic = "force-dynamic";
 
 const PER = 50;
 
 export default async function Audit({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const { t, f } = await getI18n();
   const page = Math.max(1, Number((await searchParams).page) || 1);
   const [total, rows] = await Promise.all([
     db.auditLog.count(),
@@ -17,16 +18,16 @@ export default async function Audit({ searchParams }: { searchParams: Promise<{ 
   ]);
   return (
     <>
-      <div className="dash-head"><div><h1>گزارش رویدادها</h1><p>همه‌ی اقدام‌های مدیریتی و تغییرات مهم، با زمان و IP</p></div></div>
+      <div className="dash-head"><div><h1>{t("گزارش رویدادها")}</h1><p>{t("همه‌ی اقدام‌های مدیریتی و تغییرات مهم، با زمان و IP")}</p></div></div>
       <div className="table-wrap">
         <table className="table">
-          <thead><tr><th>زمان</th><th>کاربر</th><th>رویداد</th><th>موضوع</th><th>جزئیات</th><th>IP</th></tr></thead>
+          <thead><tr><th>{t("زمان")}</th><th>{t("کاربر")}</th><th>{t("رویداد")}</th><th>{t("موضوع")}</th><th>{t("جزئیات")}</th><th>IP</th></tr></thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.id}>
-                <td className="muted" style={{ whiteSpace: "nowrap" }}>{faDateTime(r.createdAt)}</td>
+                <td className="muted" style={{ whiteSpace: "nowrap" }}>{f.dateTime(r.createdAt)}</td>
                 <td>{r.actor?.name ?? r.actor?.username ?? r.actor?.phone ?? "—"}</td>
-                <td>{AUDIT_LABEL[r.action] ?? r.action}</td>
+                <td>{AUDIT_LABEL[r.action] ? t(AUDIT_LABEL[r.action]) : r.action}</td>
                 <td className="mono muted" style={{ fontSize: 12 }}>{r.entity}{r.entityId ? ` · ${r.entityId.slice(-8)}` : ""}</td>
                 <td className="muted" style={{ fontSize: 12.5, maxWidth: 280 }} dir="auto">{r.meta ? JSON.stringify(r.meta) : ""}</td>
                 <td className="mono muted" style={{ fontSize: 12 }}>{r.ip}</td>

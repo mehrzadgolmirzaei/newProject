@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getUser, isAdmin, revokeAllSessions } from "@/lib/auth";
 import { audit } from "@/lib/audit";
-import { faDigits, normalizeFa } from "@/lib/text";
+import { normalizeFa } from "@/lib/text";
 import { hashPassword, normalizeUsername, PASSWORD_MIN } from "@/lib/password";
 import { fail, done, type ActionResult } from "@/lib/result";
 
@@ -56,7 +56,7 @@ export async function createUser(input: { username: string; password: string; ro
   const username = normalizeUsername(input.username ?? "");
   if (!username) return fail("نام کاربری باید با حرف لاتین شروع شود و فقط شامل حروف لاتین کوچک، عدد، نقطه یا زیرخط باشد.", "username");
   const password = String(input.password ?? "");
-  if (password.length < PASSWORD_MIN) return fail(`رمز عبور باید دست‌کم ${faDigits(PASSWORD_MIN)} نویسه باشد.`, "password");
+  if (password.length < PASSWORD_MIN) return fail("رمز عبور باید دست‌کم {n} نویسه باشد.", "password", { n: PASSWORD_MIN });
   if (!["ADMIN", "CONTRIBUTOR", "MEMBER"].includes(input.role)) return fail("نقش نامعتبر است.");
   if (await db.user.findUnique({ where: { username }, select: { id: true } })) return fail("این نام کاربری قبلاً ثبت شده است.", "username");
 
@@ -72,7 +72,7 @@ export async function createUser(input: { username: string; password: string; ro
 export async function resetPassword(userId: string, password: string): Promise<ActionResult> {
   const me = await admin();
   if (!me) return fail(DENIED);
-  if (String(password ?? "").length < PASSWORD_MIN) return fail(`رمز عبور باید دست‌کم ${faDigits(PASSWORD_MIN)} نویسه باشد.`);
+  if (String(password ?? "").length < PASSWORD_MIN) return fail("رمز عبور باید دست‌کم {n} نویسه باشد.", undefined, { n: PASSWORD_MIN });
   const u = await db.user.findUnique({ where: { id: userId }, select: { id: true, username: true } });
   if (!u?.username) return fail("این کاربر نام کاربری ندارد.");
   await db.user.update({ where: { id: userId }, data: { passwordHash: await hashPassword(password) } });

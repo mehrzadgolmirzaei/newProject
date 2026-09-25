@@ -29,7 +29,7 @@ export function Motion() {
       return;
     }
 
-    const fmt = new Intl.NumberFormat("fa-IR");
+    const fmt = new Intl.NumberFormat(document.documentElement.lang === "en" ? "en-US" : "fa-IR");
     const count = (el: HTMLElement) => {
       const to = Number(el.dataset.count);
       if (!Number.isFinite(to) || to <= 0) return;

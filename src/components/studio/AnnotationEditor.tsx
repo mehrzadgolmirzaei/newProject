@@ -6,7 +6,7 @@ import { Icon, type IconName } from "../Icon";
 import { AnnotationLayer } from "../viewer/AnnotationLayer";
 import { screenToImage, useOsd } from "../viewer/osd";
 import type { Annotation, Shape } from "../viewer/types";
-import { faDigits } from "@/lib/text";
+import { useI18n } from "../LocaleProvider";
 
 type Tool = "PAN" | Shape;
 const TOOLS: { id: Tool; icon: IconName; label: string }[] = [
@@ -27,6 +27,7 @@ export function AnnotationEditor({ media, onClose }: { media: StudioMedia; onClo
   const [dirty, setDirty] = useState(false);
   const [err, setErr] = useState("");
   const [pending, start] = useTransition();
+  const { t, f } = useI18n();
   const stage = useRef<HTMLDivElement>(null);
   const labelRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -67,14 +68,14 @@ export function AnnotationEditor({ media, onClose }: { media: StudioMedia; onClo
   const all = draft ? [...items, draft] : items;
 
   return (
-    <div className="modal-back" role="dialog" aria-modal="true" aria-label="نشانه‌گذاری تصویر">
+    <div className="modal-back" role="dialog" aria-modal="true" aria-label={t("نشانه‌گذاری تصویر")}>
       <div className="modal wide">
         <div className="modal-head">
-          <h2>نشانه‌گذاری تصویر</h2>
+          <h2>{t("نشانه‌گذاری تصویر")}</h2>
           <span className="muted en" style={{ fontSize: 13 }}>{[media.stain, media.magnification].filter(Boolean).join(" · ")}</span>
           <span className="spacer" />
           {err && <span style={{ color: "var(--danger)", fontSize: 13 }}>{err}</span>}
-          <button className="btn btn-ghost btn-sm" onClick={() => (!dirty || confirm("تغییرات ذخیره نشده‌اند. خارج می‌شوید؟")) && onClose(false)}>انصراف</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => (!dirty || confirm(t("تغییرات ذخیره نشده‌اند. خارج می‌شوید؟"))) && onClose(false)}>{t("انصراف")}</button>
           <button
             className="btn btn-primary btn-sm"
             disabled={pending || !dirty}
@@ -86,7 +87,7 @@ export function AnnotationEditor({ media, onClose }: { media: StudioMedia; onClo
               })
             }
           >
-            {pending ? "در حال ذخیره…" : "ذخیره"}
+            {pending ? t("در حال ذخیره…") : t("ذخیره")}
           </button>
         </div>
         <div className="modal-body annot-editor">
@@ -132,18 +133,18 @@ export function AnnotationEditor({ media, onClose }: { media: StudioMedia; onClo
                   }}
                 />
               )}
-              {!ready && <div className="viewer-loading">در حال بارگذاری…</div>}
-              <div className="viewer-float" role="toolbar" aria-label="ابزار رسم">
-                {TOOLS.map((t) => (
-                  <button key={t.id} className="viewer-btn" aria-pressed={tool === t.id} title={t.label} onClick={() => setTool(t.id)}>
-                    <Icon name={t.icon} />
+              {!ready && <div className="viewer-loading">{t("در حال بارگذاری…")}</div>}
+              <div className="viewer-float" role="toolbar" aria-label={t("ابزار رسم")}>
+                {TOOLS.map((x) => (
+                  <button key={x.id} className="viewer-btn" aria-pressed={tool === x.id} title={t(x.label)} onClick={() => setTool(x.id)}>
+                    <Icon name={x.icon} />
                   </button>
                 ))}
               </div>
             </div>
             <div className="viewer-bar">
               <span className="info">
-                {tool === "PAN" ? "جابه‌جا کنید و زوم کنید؛ برای انتخاب، روی شکل کلیک کنید." : `برای کشیدن ${SHAPE_FA[tool]}، روی تصویر بکشید. پیکان از نقطه‌ی شروع به سمت هدف کشیده می‌شود.`}
+                {tool === "PAN" ? t("جابه‌جا کنید و زوم کنید؛ برای انتخاب، روی شکل کلیک کنید.") : t("برای کشیدن {shape}، روی تصویر بکشید. پیکان از نقطه‌ی شروع به سمت هدف کشیده می‌شود.", { shape: t(SHAPE_FA[tool]) })}
               </span>
             </div>
           </div>
@@ -151,35 +152,35 @@ export function AnnotationEditor({ media, onClose }: { media: StudioMedia; onClo
           <div className="stack gap-12">
             <div className="alert alert-info" style={{ fontSize: 13 }}>
               <Icon name="info" />
-              <span>نشانه‌هایی را که پاسخ را آشکار می‌کنند (مانند برچسبی حاوی نام موجودیت) علامت بزنید؛ این نشانه‌ها فقط پس از پاسخ خواننده نمایش داده می‌شوند.</span>
+              <span>{t("نشانه‌هایی را که پاسخ را آشکار می‌کنند (مانند برچسبی حاوی نام موجودیت) علامت بزنید؛ این نشانه‌ها فقط پس از پاسخ خواننده نمایش داده می‌شوند.")}</span>
             </div>
             {items.length === 0 ? (
-              <p className="muted" style={{ fontSize: 14 }}>هنوز نشانه‌ای اضافه نشده است.</p>
+              <p className="muted" style={{ fontSize: 14 }}>{t("هنوز نشانه‌ای اضافه نشده است.")}</p>
             ) : (
               <div className="annot-list">
                 {items.map((a, i) => (
                   <div key={i} className={`annot-row${sel === i ? " selected" : ""}`} onClick={() => setSel(i)}>
-                    <span className="badge" style={{ paddingInline: 6 }}>{faDigits(i + 1)}</span>
+                    <span className="badge" style={{ paddingInline: 6 }}>{f.digits(i + 1)}</span>
                     <input
                       ref={(r) => { labelRefs.current[i] = r; }}
                       className="input"
                       style={{ minHeight: 34, padding: "4px 8px", fontSize: 13.5 }}
-                      placeholder={`برچسب ${SHAPE_FA[a.shape]}`}
+                      placeholder={t("برچسب {shape}", { shape: t(SHAPE_FA[a.shape]) })}
                       value={a.label}
                       maxLength={120}
                       dir="auto"
                       onChange={(e) => update(i, { label: e.target.value })}
                     />
-                    <label className="check" title="فقط پس از پاسخ نمایش داده شود" style={{ fontSize: 12, alignItems: "center", gap: 4 }}>
+                    <label className="check" title={t("فقط پس از پاسخ نمایش داده شود")} style={{ fontSize: 12, alignItems: "center", gap: 4 }}>
                       <input type="checkbox" checked={a.spoiler} onChange={(e) => update(i, { spoiler: e.target.checked })} style={{ marginTop: 0 }} />
-                      آشکارکننده‌ی پاسخ
+                      {t("آشکارکننده‌ی پاسخ")}
                     </label>
-                    <button className="btn btn-ghost btn-icon btn-sm" aria-label="حذف" onClick={(e) => { e.stopPropagation(); remove(i); }}><Icon name="trash" /></button>
+                    <button className="btn btn-ghost btn-icon btn-sm" aria-label={t("حذف")} onClick={(e) => { e.stopPropagation(); remove(i); }}><Icon name="trash" /></button>
                   </div>
                 ))}
               </div>
             )}
-            <p className="muted" style={{ fontSize: 12.5 }}>میانبرها: V جابه‌جایی · A پیکان · E بیضی · R کادر · Delete حذف</p>
+            <p className="muted" style={{ fontSize: 12.5 }}>{t("میانبرها: V جابه‌جایی · A پیکان · E بیضی · R کادر · Delete حذف")}</p>
           </div>
         </div>
       </div>

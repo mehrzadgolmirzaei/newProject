@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { THEME_COOKIE, type Theme } from "@/lib/theme";
 import { Icon } from "./Icon";
+import { useI18n } from "./LocaleProvider";
 
 /** دکمه‌ی تغییر تم با نماد خورشید و ماه */
 export function ThemeToggle({ initial }: { initial: Theme }) {
   const [theme, setTheme] = useState<Theme>(initial);
+  const { t } = useI18n();
 
   function toggle() {
     const next: Theme = theme === "dark" ? "light" : "dark";
@@ -20,7 +22,7 @@ export function ThemeToggle({ initial }: { initial: Theme }) {
     window.setTimeout(() => root.classList.remove("theme-switching"), 450);
   }
 
-  const label = theme === "dark" ? "تم روشن" : "تم تیره";
+  const label = theme === "dark" ? t("تم روشن") : t("تم تیره");
   return (
     <button type="button" className="theme-toggle" onClick={toggle} aria-label={label} title={label} data-mode={theme}>
       <span className="tt-icon tt-sun"><Icon name="sun" size={18} /></span>

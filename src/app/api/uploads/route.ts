@@ -9,6 +9,8 @@ import { env } from "@/lib/env";
 import { canEditCase, getUser } from "@/lib/auth";
 import { enqueue, incomingPath, kindForExt } from "@/lib/media";
 import { INCOMING_DIR } from "@/lib/storage";
+import { translate } from "@/lib/i18n/translate";
+import { fmt } from "@/lib/format";
 
 // آپلود یک فایل تصویر/اسلاید به‌صورت جریانی (بدنه‌ی خام، نه multipart)
 // تا فایل‌های چندگیگابایتی اسلاید کامل بدون پر کردن حافظه‌ی سرور ذخیره شوند.
@@ -17,9 +19,14 @@ import { INCOMING_DIR } from "@/lib/storage";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const err = (message: string, status: number) => NextResponse.json({ error: message }, { status });
-
 export async function PUT(req: NextRequest) {
+  // زبان پیام خطا از صفحه‌ی ارسال‌کننده (/en/...) تعیین می‌شود؛ مسیر API پیشوند زبان ندارد
+  let locale: "fa" | "en" = "fa";
+  try { if (new URL(req.headers.get("referer") ?? "").pathname.split("/")[1] === "en") locale = "en"; } catch { /* بدون referer */ }
+  const f = fmt(locale);
+  const err = (message: string, status: number, n?: number) =>
+    NextResponse.json({ error: translate(locale, message, n == null ? undefined : { n: f.digits(n) }) }, { status });
+
   // محافظت CSRF: درخواست باید از خود سایت آمده باشد
   const origin = req.headers.get("origin");
   const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
@@ -37,11 +44,11 @@ export async function PUT(req: NextRequest) {
 
   const max = env.MAX_UPLOAD_MB * 1024 * 1024;
   const declared = Number(req.headers.get("content-length") ?? 0);
-  if (declared > max) return err(`حجم فایل بیش از ${env.MAX_UPLOAD_MB} مگابایت است.`, 413);
+  if (declared > max) return err("حجم فایل بیش از {n} مگابایت است.", 413, env.MAX_UPLOAD_MB);
   if (!req.body) return err("فایلی دریافت نشد.", 400);
 
   const count = await db.mediaAsset.count({ where: { caseId: c.id } });
-  if (count >= 40) return err("حداکثر ۴۰ تصویر برای هر مورد.", 400);
+  if (count >= 40) return err("حداکثر {n} تصویر برای هر مورد.", 400, 40);
 
   const asset = await db.mediaAsset.create({
     data: { caseId: c.id, kind, sourceExt: ext, status: "UPLOADING", order: count, uploadedById: user!.id },
@@ -64,7 +71,7 @@ export async function PUT(req: NextRequest) {
     await fsp.rm(dest, { force: true });
     await db.mediaAsset.delete({ where: { id: asset.id } });
     const tooLarge = e instanceof Error && e.message === "too-large";
-    return err(tooLarge ? `حجم فایل بیش از ${env.MAX_UPLOAD_MB} مگابایت است.` : "بارگذاری فایل ناتمام ماند.", tooLarge ? 413 : 400);
+    return err(tooLarge ? "حجم فایل بیش از {n} مگابایت است." : "بارگذاری فایل ناتمام ماند.", tooLarge ? 413 : 400, env.MAX_UPLOAD_MB);
   }
 
   await db.mediaAsset.update({

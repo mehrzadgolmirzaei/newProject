@@ -2,7 +2,7 @@ import "server-only";
 import crypto from "node:crypto";
 import { cache } from "react";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { lredirect } from "./i18n/server";
 import type { Role, User } from "@prisma/client";
 import { db } from "./db";
 import { env, isProduction } from "./env";
@@ -95,15 +95,15 @@ export const canModerateCase = (u: CurrentUser | null, c: { authorId: string }) 
 
 export async function requireUser(next = "/"): Promise<CurrentUser> {
   const u = await getUser();
-  if (!u) redirect(`/login?next=${encodeURIComponent(next)}`);
-  if (!u.profileComplete) redirect("/onboarding");
+  if (!u) return lredirect(`/login?next=${encodeURIComponent(next)}`);
+  if (!u.profileComplete) return lredirect("/onboarding");
   return u;
 }
 
 export async function requireRole(roles: Role[], next = "/"): Promise<CurrentUser> {
   const u = await requireUser(next);
-  if (u.status !== "ACTIVE") redirect("/account");
-  if (!roles.includes(u.role)) redirect("/");
+  if (u.status !== "ACTIVE") return lredirect("/account");
+  if (!roles.includes(u.role)) return lredirect("/");
   return u;
 }
 

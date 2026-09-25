@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { getI18n, lredirect } from "@/lib/i18n/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { canEditCase, getUser, isAdmin, isContributor, type CurrentUser } from "@/lib/auth";
@@ -22,10 +22,10 @@ async function loadEditable(user: CurrentUser | null, caseId: string) {
 
 export async function createDraft() {
   const user = await getUser();
-  if (!isContributor(user)) redirect("/");
+  if (!isContributor(user)) return lredirect("/");
   const c = await db.case.create({ data: { authorId: user!.id } });
   await audit(user!.id, "case.create", "Case", c.id);
-  redirect(`/studio/cases/${c.id}`);
+  return lredirect(`/studio/cases/${c.id}`);
 }
 
 export async function saveCase(caseId: string, input: CaseForm): Promise<ActionResult<{ savedAt: string }>> {
@@ -79,7 +79,10 @@ export async function submitCase(caseId: string): Promise<ActionResult<{ status:
   if (!c) return fail("اجازه‌ی ویرایش این مورد را ندارید.");
   if (c.status === "PUBLISHED") return fail("این مورد منتشر شده است.");
   const missing = await readiness(c.id);
-  if (missing.length) return fail("پیش از ارسال کامل کنید: " + missing.join("، "));
+  if (missing.length) {
+    const { t, locale } = await getI18n();
+    return fail("پیش از ارسال کامل کنید: {list}", undefined, { list: missing.map((m) => t(m)).join(locale === "en" ? ", " : "، ") });
+  }
 
   const direct = isAdmin(user) || !!user!.trusted;
   await db.case.update({
@@ -107,11 +110,11 @@ export async function withdrawCase(caseId: string): Promise<ActionResult> {
 export async function deleteDraft(caseId: string) {
   const user = await getUser();
   const c = await db.case.findUnique({ where: { id: caseId }, include: { media: true } });
-  if (!c || !(isAdmin(user) || (user?.id === c.authorId && c.status === "DRAFT"))) redirect("/studio");
+  if (!c || !(isAdmin(user) || (user?.id === c.authorId && c.status === "DRAFT"))) return lredirect("/studio");
   for (const m of c.media) await removeAssetFiles(m).catch(() => {});
   await db.case.delete({ where: { id: c.id } });
   await audit(user!.id, "case.delete", "Case", c.id, { title: c.title });
-  redirect("/studio");
+  return lredirect("/studio");
 }
 
 // ─── تصاویر ───────────────────────────────────────────────────────────────

@@ -65,6 +65,9 @@ const P: Record<string, React.ReactNode> = {
 
 export type IconName = keyof typeof P;
 
+// آیکن‌های جهت‌دار در صفحه‌های چپ‌به‌راست (انگلیسی) قرینه می‌شوند
+const DIRECTIONAL = new Set(["arrowLeft", "arrowRight", "chevronLeft", "chevronRight"]);
+
 export function Icon({ name, size, className, label }: { name: IconName; size?: number; className?: string; label?: string }) {
   return (
     <svg
@@ -76,7 +79,7 @@ export function Icon({ name, size, className, label }: { name: IconName; size?: 
       strokeWidth={1.8}
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={className}
+      className={DIRECTIONAL.has(name) ? `i-dir${className ? ` ${className}` : ""}` : className}
       aria-hidden={label ? undefined : true}
       aria-label={label}
       role={label ? "img" : undefined}

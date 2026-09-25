@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { privateMeta } from "@/lib/seo";
 import { notFound } from "next/navigation";
 import { canEditCase, getUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -8,7 +8,7 @@ import { acceptedExtensions } from "@/lib/media";
 import { env } from "@/lib/env";
 import { CaseEditor } from "@/components/studio/CaseEditor";
 
-export const metadata: Metadata = { title: "ویرایش مورد", robots: { index: false } };
+export const generateMetadata = () => privateMeta("ویرایش مورد");
 export const dynamic = "force-dynamic";
 
 export default async function EditCase({ params }: { params: Promise<{ id: string }> }) {

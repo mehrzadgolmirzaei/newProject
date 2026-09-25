@@ -1,6 +1,6 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { lredirect } from "@/lib/i18n/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { env, isProduction } from "@/lib/env";
@@ -9,14 +9,14 @@ import { hit } from "@/lib/rate-limit";
 import { sendOtpSms } from "@/lib/sms";
 import { clientIp } from "@/lib/request";
 import { audit } from "@/lib/audit";
-import { faDigits, normalizeFa, normalizePhone, maskPhone, toLatinDigits } from "@/lib/text";
+import { normalizeFa, normalizePhone, maskPhone, toLatinDigits } from "@/lib/text";
 import { fail, done, type ActionResult } from "@/lib/result";
 import { hashPassword, verifyPassword, normalizeUsername, PASSWORD_MIN } from "@/lib/password";
 
 const OTP_TTL_SEC = 120;
 const OTP_MAX_TRIES = 5;
 
-const wait = (sec: number) => `لطفاً ${faDigits(sec)} ثانیه‌ی دیگر دوباره تلاش کنید.`;
+const WAIT = "لطفاً {n} ثانیه‌ی دیگر دوباره تلاش کنید.";
 
 const safeNext = (next?: string) => (next && next.startsWith("/") && !next.startsWith("//") ? next : "/");
 
@@ -32,7 +32,7 @@ export async function requestOtp(input: { phone: string }): Promise<ActionResult
     [`otp:ip:${ip}:1h`, 20, 3600],
   ] as const) {
     const r = await hit(key, limit, win);
-    if (!r.ok) return fail(wait(r.retryAfter));
+    if (!r.ok) return fail(WAIT, undefined, { n: r.retryAfter });
   }
 
   const code = generateOtp();
@@ -58,7 +58,7 @@ export async function verifyOtp(input: { phone: string; code: string; next?: str
 
   const ip = await clientIp();
   const r = await hit(`verify:ip:${ip}`, 30, 600);
-  if (!r.ok) return fail(wait(r.retryAfter));
+  if (!r.ok) return fail(WAIT, undefined, { n: r.retryAfter });
 
   const otp = await db.otpCode.findFirst({
     where: { phone, consumedAt: null, expiresAt: { gt: new Date() } },
@@ -70,7 +70,7 @@ export async function verifyOtp(input: { phone: string; code: string; next?: str
   if (!safeEqual(otp.codeHash, hashOtp(phone, code))) {
     await db.otpCode.update({ where: { id: otp.id }, data: { attempts: { increment: 1 } } });
     const left = OTP_MAX_TRIES - otp.attempts - 1;
-    return fail(left > 0 ? `کد واردشده صحیح نیست. ${faDigits(left)} تلاش دیگر باقی است.` : "کد واردشده صحیح نیست. لطفاً کد جدید درخواست کنید.", "code");
+    return fail(left > 0 ? "کد واردشده صحیح نیست. {n} تلاش دیگر باقی است." : "کد واردشده صحیح نیست. لطفاً کد جدید درخواست کنید.", "code", { n: left });
   }
 
   // مصرف اتمیک: اگر درخواست هم‌زمان دیگری زودتر مصرفش کرده باشد، این یکی رد می‌شود
@@ -103,7 +103,7 @@ export async function loginWithPassword(input: { username: string; password: str
     [`login:ip:${ip}`, 40, 900],
   ] as const) {
     const r = await hit(key, limit, win);
-    if (!r.ok) return fail(`تعداد تلاش‌های ناموفق بیش از حد مجاز است. ${wait(r.retryAfter)}`);
+    if (!r.ok) return fail("تعداد تلاش‌های ناموفق بیش از حد مجاز است. لطفاً {n} ثانیه‌ی دیگر دوباره تلاش کنید.", undefined, { n: r.retryAfter });
   }
 
   const user = await db.user.findUnique({ where: { username }, select: { id: true, passwordHash: true, status: true, profileComplete: true } });
@@ -119,7 +119,7 @@ export async function loginWithPassword(input: { username: string; password: str
 
 const registerSchema = z.object({
   username: z.string().transform((s) => normalizeUsername(s) ?? "").refine(Boolean, "نام کاربری باید با حرف لاتین شروع شود و فقط شامل حروف لاتین کوچک، عدد، نقطه یا زیرخط باشد (۳ تا ۳۲ نویسه)."),
-  password: z.string().min(PASSWORD_MIN, `رمز عبور باید دست‌کم ${faDigits(PASSWORD_MIN)} نویسه باشد.`).max(128),
+  password: z.string().min(PASSWORD_MIN, "رمز عبور باید دست‌کم ۸ نویسه باشد.").max(128),
 });
 
 export async function register(input: { username: string; password: string; next?: string }): Promise<ActionResult<{ to: string }>> {
@@ -129,7 +129,7 @@ export async function register(input: { username: string; password: string; next
 
   const ip = await clientIp();
   const r = await hit(`register:ip:${ip}`, 10, 3600);
-  if (!r.ok) return fail(wait(r.retryAfter));
+  if (!r.ok) return fail(WAIT, undefined, { n: r.retryAfter });
 
   const exists = await db.user.findUnique({ where: { username: p.data.username }, select: { id: true } });
   if (exists) return fail("این نام کاربری قبلاً ثبت شده است.", "username");
@@ -144,11 +144,11 @@ export async function changePassword(input: { current: string; next: string }): 
   const me = await getUser();
   if (!me) return fail("نشست شما منقضی شده است. دوباره وارد شوید.");
   const r = await hit(`pwchange:user:${me.id}`, 10, 900);
-  if (!r.ok) return fail(wait(r.retryAfter));
+  if (!r.ok) return fail(WAIT, undefined, { n: r.retryAfter });
   const row = await db.user.findUnique({ where: { id: me.id }, select: { passwordHash: true } });
   if (row?.passwordHash && !(await verifyPassword(String(input.current ?? ""), row.passwordHash))) return fail("رمز عبور فعلی صحیح نیست.", "current");
   const next = String(input.next ?? "");
-  if (next.length < PASSWORD_MIN || next.length > 128) return fail(`رمز عبور جدید باید دست‌کم ${faDigits(PASSWORD_MIN)} نویسه باشد.`, "next");
+  if (next.length < PASSWORD_MIN || next.length > 128) return fail("رمز عبور جدید باید دست‌کم {n} نویسه باشد.", "next", { n: PASSWORD_MIN });
   await db.user.update({ where: { id: me.id }, data: { passwordHash: await hashPassword(next) } });
   await audit(me.id, "user.password", "User", me.id);
   return done();
@@ -156,7 +156,7 @@ export async function changePassword(input: { current: string; next: string }): 
 
 export async function logout() {
   await destroySession();
-  redirect("/");
+  return lredirect("/");
 }
 
 // ─── تکمیل پروفایل ──────────────────────────────────────────────────────

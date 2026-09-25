@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Icon } from "../Icon";
+import { useI18n } from "../LocaleProvider";
 
 /** ویرایش فهرست ساده‌ی رشته‌ها — حالت inline به‌صورت برچسب (برای کلیدواژه‌ها) */
 export function ListEditor({
@@ -20,6 +21,7 @@ export function ListEditor({
   inline?: boolean;
 }) {
   const [draft, setDraft] = useState("");
+  const { t } = useI18n();
   const add = () => {
     const v = draft.trim();
     if (!v || items.includes(v)) return;
@@ -35,7 +37,7 @@ export function ListEditor({
             {items.map((k) => (
               <span key={k} className="badge badge-outline" dir="auto">
                 {k}
-                <button type="button" onClick={() => onChange(items.filter((x) => x !== k))} aria-label={`حذف ${k}`} style={{ border: 0, background: "none", cursor: "pointer", padding: 0, color: "inherit", display: "grid" }}>
+                <button type="button" onClick={() => onChange(items.filter((x) => x !== k))} aria-label={t("حذف {x}", { x: k })} style={{ border: 0, background: "none", cursor: "pointer", padding: 0, color: "inherit", display: "grid" }}>
                   <Icon name="x" size={12} />
                 </button>
               </span>
@@ -57,7 +59,7 @@ export function ListEditor({
       {items.map((it, i) => (
         <div key={i} className="row-edit list">
           <input className={`input${ltr ? " input-ltr" : ""}`} value={it} dir="auto" onChange={(e) => onChange(items.map((x, j) => (j === i ? e.target.value : x)))} />
-          <button type="button" className="btn btn-ghost btn-icon btn-sm" aria-label="حذف" onClick={() => onChange(items.filter((_, j) => j !== i))}><Icon name="trash" /></button>
+          <button type="button" className="btn btn-ghost btn-icon btn-sm" aria-label={t("حذف")} onClick={() => onChange(items.filter((_, j) => j !== i))}><Icon name="trash" /></button>
         </div>
       ))}
       <div className="row-edit list">

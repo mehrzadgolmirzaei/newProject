@@ -150,6 +150,7 @@ p { margin: 0; }
 :root[data-theme="dark"] .logo-light { display: none; }
 :root[data-theme="dark"] .logo-dark { display: block; }
 .nav { display: flex; gap: 2px; }
+.nav a { white-space: nowrap; }
 .nav a {
   position: relative; padding: 6px 12px; border-radius: var(--r-sm); color: var(--ink-2); font-size: 14.5px; font-weight: 500;
   transition: color 0.2s;
@@ -186,7 +187,8 @@ p { margin: 0; }
 .menu-panel .menu-head { padding: 8px 10px 10px; border-bottom: 1px solid var(--line); margin-bottom: 6px; }
 .menu-panel hr { border: 0; border-top: 1px solid var(--line); margin: 6px 0; }
 .mobile-only { display: none; }
-@media (max-width: 640px) { .mobile-hide { display: none; } .site-header .wrap { gap: 6px; } .user-chip { padding: 3px; } }
+.lbl-short { display: none; }
+@media (max-width: 640px) { .mobile-hide { display: none; } html[lang="en"] .lbl-long { display: none; } html[lang="en"] .lbl-short { display: inline; } .site-header .wrap { gap: 6px; } .user-chip { padding: 3px; } }
 @media (max-width: 960px) {
   .nav, .header-search { display: none; }
   .mobile-only { display: flex; }
@@ -1199,3 +1201,48 @@ main { animation: page-in 0.5s var(--ease) both; }
 @media (max-width: 860px) { .studio-guide { grid-template-columns: 1fr; } }
 :root[data-theme="dark"] .studio-guide li, :root[data-theme="dark"] .mode-card { background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0) 38%), var(--surface); border-color: rgba(255, 255, 255, 0.08); }
 :root[data-theme="dark"] .mode-card[aria-checked="true"] { border-color: #a78bfa; background: linear-gradient(180deg, rgba(167, 139, 250, 0.14), var(--surface) 70%); }
+
+/* ─── نسخه‌ی انگلیسی (چپ‌به‌راست) ──────────────────────────────────────── */
+
+html[lang="en"] { --font: "Inter Variable", "Vazirmatn Variable", system-ui, -apple-system, "Segoe UI", sans-serif; }
+html[lang="en"] body { letter-spacing: -0.005em; }
+html[dir="ltr"] .i-dir { scale: -1 1; }
+html[dir="ltr"] a.lens-card:hover .lens-cta svg,
+html[dir="ltr"] .btn-light:hover svg,
+html[dir="ltr"] .link-arrow:hover svg { transform: translateX(4px); }
+html[dir="ltr"] .btn-light::after { transform: translateX(-120%); }
+html[dir="ltr"] .btn-light:hover::after { transform: translateX(120%); }
+html[dir="ltr"] .steps::before { transform-origin: left; }
+html[dir="ltr"] .case-dx,
+html[dir="ltr"] .ihc-table .marker,
+html[dir="ltr"] .answer-dx,
+html[dir="ltr"] .ddx-item b { text-align: left; }
+html[dir="ltr"] .quiz-input::placeholder { text-align: left; direction: ltr; }
+html[dir="ltr"] .switch span::after { right: auto; left: 3px; }
+html[dir="ltr"] .switch input:checked + span::after { transform: translateX(18px); }
+/* قهرمان: متن در چپ، عدسی و میکروسکوپ در راست */
+html[dir="ltr"] .hero-photo { --photo-flip: 1; }
+html[dir="ltr"] .hero-shade {
+  background:
+    linear-gradient(to right, rgba(6, 10, 32, 0.95) 0%, rgba(6, 10, 32, 0.82) 36%, rgba(8, 12, 36, 0.4) 66%, rgba(8, 12, 36, 0.5) 100%),
+    linear-gradient(to bottom, rgba(6, 10, 32, 0.45), rgba(6, 10, 32, 0.08) 38%, rgba(6, 10, 32, 0.75));
+}
+html[dir="ltr"]:not([data-theme="dark"]) .hero-shade {
+  background:
+    linear-gradient(to right, rgba(248, 250, 254, 0.97) 0%, rgba(248, 250, 254, 0.9) 34%, rgba(244, 247, 253, 0.5) 64%, rgba(244, 247, 253, 0.12) 100%),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0) 45%, rgba(247, 246, 243, 0.55) 85%, #f7f6f3);
+}
+
+/* ─── دکمه‌ی تغییر زبان ────────────────────────────────────────────────── */
+
+.lang-switch {
+  display: grid; place-items: center; min-width: 38px; height: 38px; padding-inline: 8px; flex-shrink: 0; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2);
+  font: 700 12.5px/1 var(--font); letter-spacing: 0.02em; text-decoration: none;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.3s;
+}
+.lang-switch:hover { color: var(--ink); border-color: var(--line-2); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent); }
+.lang-switch:lang(fa) { font-family: "Vazirmatn Variable", sans-serif; font-size: 13.5px; }
+html[dir="ltr"] .select { padding-inline: 12px 34px; background-position: right 10px center; }
+html[dir="ltr"] .user-chip { padding: 4px 12px 4px 4px; }
+.user-chip { white-space: nowrap; }

@@ -3,9 +3,11 @@
 import { useState, useTransition } from "react";
 import { toggleSave } from "@/actions/learn";
 import { Icon } from "../Icon";
+import { useI18n } from "../LocaleProvider";
 
 export function SaveButton({ caseId, initial }: { caseId: string; initial: boolean }) {
   const [saved, setSaved] = useState(initial);
+  const { t } = useI18n();
   const [pending, start] = useTransition();
   return (
     <button
@@ -21,7 +23,7 @@ export function SaveButton({ caseId, initial }: { caseId: string; initial: boole
         })
       }
     >
-      <Icon name={saved ? "bookmarkFill" : "bookmark"} /> {saved ? "نشان‌شده" : "نشان‌کردن"}
+      <Icon name={saved ? "bookmarkFill" : "bookmark"} /> {saved ? t("نشان‌شده") : t("نشان‌کردن")}
     </button>
   );
 }

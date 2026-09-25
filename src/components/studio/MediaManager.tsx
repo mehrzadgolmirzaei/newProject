@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { deleteMedia, listMedia, reorderMedia, retryMedia, updateMedia, type StudioMedia } from "@/actions/studio";
 import { MAGNIFICATION_SUGGESTIONS, STAIN_SUGGESTIONS } from "@/lib/taxonomy";
-import { faDigits } from "@/lib/text";
+import { useI18n } from "../LocaleProvider";
 import { Icon } from "../Icon";
 import { AnnotationEditor } from "./AnnotationEditor";
 
@@ -17,6 +17,7 @@ export function MediaManager({
   const [over, setOver] = useState(false);
   const [annotating, setAnnotating] = useState<StudioMedia | null>(null);
   const [err, setErr] = useState("");
+  const { t, f } = useI18n();
   const input = useRef<HTMLInputElement>(null);
 
   const refresh = async () => {
@@ -37,11 +38,11 @@ export function MediaManager({
     const ext = ("." + (file.name.split(".").pop() ?? "")).toLowerCase();
     const key = `${Date.now()}-${Math.random()}`;
     if (!accept.includes(ext)) {
-      setErr(`نوع فایل «${ext}» پشتیبانی نمی‌شود.`);
+      setErr(t("نوع فایل «{ext}» پشتیبانی نمی‌شود.", { ext }));
       return;
     }
     if (file.size > maxMb * 1024 * 1024) {
-      setErr(`حجم «${file.name}» بیش از ${faDigits(maxMb)} مگابایت است.`);
+      setErr(t("حجم «{name}» بیش از {n} مگابایت است.", { name: file.name, n: f.digits(maxMb) }));
       return;
     }
     setUploads((u) => [...u, { key, name: file.name, progress: 0 }]);
@@ -56,12 +57,12 @@ export function MediaManager({
         setUploads((u) => u.filter((x) => x.key !== key));
         await refresh();
       } else {
-        let msg = "بارگذاری فایل ناموفق بود.";
+        let msg = t("بارگذاری فایل ناموفق بود.");
         try { msg = JSON.parse(xhr.responseText).error ?? msg; } catch { /* پاسخ غیر JSON */ }
         setUploads((u) => u.map((x) => (x.key === key ? { ...x, error: msg } : x)));
       }
     };
-    xhr.onerror = () => setUploads((u) => u.map((x) => (x.key === key ? { ...x, error: "ارتباط با سرور قطع شد." } : x)));
+    xhr.onerror = () => setUploads((u) => u.map((x) => (x.key === key ? { ...x, error: t("ارتباط با سرور قطع شد.") } : x)));
     xhr.send(file);
   }
 
@@ -93,9 +94,9 @@ export function MediaManager({
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") input.current?.click(); }}
       >
         <Icon name="upload" />
-        <b>فایل‌ها را اینجا رها کنید یا کلیک کنید</b>
+        <b>{t("فایل‌ها را اینجا رها کنید یا کلیک کنید")}</b>
         <small>
-          JPEG، PNG، TIFF، WebP{wsiEnabled ? "، اسلاید کامل (SVS، NDPI، MRXS…)" : ""}، ویدیو MP4 · تا {faDigits(maxMb)} مگابایت
+          {t("JPEG، PNG، TIFF، WebP{wsi}، ویدیو MP4 · تا {n} مگابایت", { wsi: wsiEnabled ? t("، اسلاید کامل (SVS، NDPI، MRXS…)") : "", n: f.digits(maxMb) })}
         </small>
         <input ref={input} type="file" multiple hidden accept={accept.join(",")} onChange={(e) => { onFiles(e.target.files); e.target.value = ""; }} />
       </div>
@@ -108,11 +109,11 @@ export function MediaManager({
             {u.error ? <div className="err" style={{ color: "var(--danger)", fontSize: 13 }}>{u.error}</div> : (
               <>
                 <div className="progress"><div style={{ width: `${Math.round(u.progress * 100)}%` }} /></div>
-                <div className="cell-sub">در حال بارگذاری… {faDigits(Math.round(u.progress * 100))}٪</div>
+                <div className="cell-sub">{t("در حال بارگذاری… {p}", { p: f.percent(Math.round(u.progress * 100), 100) })}</div>
               </>
             )}
           </div>
-          {u.error && <button type="button" className="btn btn-ghost btn-sm" onClick={() => setUploads((x) => x.filter((y) => y.key !== u.key))}>بستن</button>}
+          {u.error && <button type="button" className="btn btn-ghost btn-sm" onClick={() => setUploads((x) => x.filter((y) => y.key !== u.key))}>{t("بستن")}</button>}
         </div>
       ))}
 
@@ -125,7 +126,7 @@ export function MediaManager({
             last={i === items.length - 1}
             onMove={(d) => move(i, d)}
             onDelete={async () => {
-              if (!confirm("این تصویر و نشانه‌گذاری‌هایش حذف شود؟")) return;
+              if (!confirm(t("این تصویر و نشانه‌گذاری‌هایش حذف شود؟"))) return;
               await deleteMedia(m.id);
               await refresh();
             }}
@@ -156,6 +157,7 @@ function MediaRow({ m, first, last, onMove, onDelete, onRetry, onAnnotate }: {
   onMove: (d: -1 | 1) => void; onDelete: () => void; onRetry: () => void; onAnnotate: () => void;
 }) {
   const [f, setF] = useState({ stain: m.stain, magnification: m.magnification, caption: m.caption });
+  const { t, f: fm } = useI18n();
   const [saved, setSaved] = useState(false);
   const commit = async () => {
     if (f.stain === m.stain && f.magnification === m.magnification && f.caption === m.caption) return;
@@ -173,34 +175,34 @@ function MediaRow({ m, first, last, onMove, onDelete, onRetry, onAnnotate }: {
         ) : m.status === "READY" && m.kind === "VIDEO" ? (
           <Icon name="video" size={26} />
         ) : m.status === "FAILED" ? (
-          <span style={{ color: "#f08b82", padding: 6, textAlign: "center" }}>پردازش ناموفق</span>
+          <span style={{ color: "#f08b82", padding: 6, textAlign: "center" }}>{t("پردازش ناموفق")}</span>
         ) : (
-          <span>در حال پردازش…</span>
+          <span>{t("در حال پردازش…")}</span>
         )}
       </div>
       <div className="stack gap-8" style={{ minWidth: 0 }}>
         <div className="fields">
           <input className="input input-ltr" list="stains" placeholder="Stain (H&E, CD34…)" value={f.stain} onChange={(e) => setF({ ...f, stain: e.target.value })} onBlur={commit} />
           <input className="input input-ltr" list="mags" placeholder="×40" value={f.magnification} onChange={(e) => setF({ ...f, magnification: e.target.value })} onBlur={commit} />
-          <input className="input wide" placeholder="توضیح تصویر (اختیاری) — در مورد چالشی، تشخیص را ننویسید" value={f.caption} onChange={(e) => setF({ ...f, caption: e.target.value })} onBlur={commit} dir="auto" />
+          <input className="input wide" placeholder={t("توضیح تصویر (اختیاری) — در مورد چالشی، تشخیص را ننویسید")} value={f.caption} onChange={(e) => setF({ ...f, caption: e.target.value })} onBlur={commit} dir="auto" />
         </div>
         <div className="row gap-8" style={{ fontSize: 12.5, color: "var(--muted)", flexWrap: "wrap" }}>
-          {m.kind === "WSI" && <span className="badge badge-accent">اسلاید کامل</span>}
+          {m.kind === "WSI" && <span className="badge badge-accent">{t("اسلاید کامل")}</span>}
           {m.width && m.height && <span className="en">{m.width.toLocaleString()} × {m.height.toLocaleString()} px</span>}
-          {m.annotations.length > 0 && <span className="badge">{faDigits(m.annotations.length)} نشانه</span>}
+          {m.annotations.length > 0 && <span className="badge">{t("{n} نشانه", { n: fm.digits(m.annotations.length) })}</span>}
           {m.status === "FAILED" && m.error && <span style={{ color: "var(--danger)" }} className="en">{m.error}</span>}
-          {saved && <span style={{ color: "var(--ok)" }}>ذخیره شد</span>}
+          {saved && <span style={{ color: "var(--ok)" }}>{t("ذخیره شد")}</span>}
         </div>
       </div>
       <div className="tools">
         {m.status === "READY" && m.kind !== "VIDEO" && (
-          <button type="button" className="btn btn-secondary btn-sm" onClick={onAnnotate}><Icon name="arrowTool" /> نشانه‌گذاری</button>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={onAnnotate}><Icon name="arrowTool" /> {t("نشانه‌گذاری")}</button>
         )}
-        {m.status === "FAILED" && <button type="button" className="btn btn-secondary btn-sm" onClick={onRetry}><Icon name="refresh" /> تلاش دوباره</button>}
+        {m.status === "FAILED" && <button type="button" className="btn btn-secondary btn-sm" onClick={onRetry}><Icon name="refresh" /> {t("تلاش دوباره")}</button>}
         <div className="row gap-4">
-          <button type="button" className="btn btn-ghost btn-icon btn-sm" disabled={first} onClick={() => onMove(-1)} aria-label="بالا"><Icon name="up" /></button>
-          <button type="button" className="btn btn-ghost btn-icon btn-sm" disabled={last} onClick={() => onMove(1)} aria-label="پایین"><Icon name="down" /></button>
-          <button type="button" className="btn btn-ghost btn-icon btn-sm" onClick={onDelete} aria-label="حذف"><Icon name="trash" /></button>
+          <button type="button" className="btn btn-ghost btn-icon btn-sm" disabled={first} onClick={() => onMove(-1)} aria-label={t("بالا")}><Icon name="up" /></button>
+          <button type="button" className="btn btn-ghost btn-icon btn-sm" disabled={last} onClick={() => onMove(1)} aria-label={t("پایین")}><Icon name="down" /></button>
+          <button type="button" className="btn btn-ghost btn-icon btn-sm" onClick={onDelete} aria-label={t("حذف")}><Icon name="trash" /></button>
         </div>
       </div>
     </div>

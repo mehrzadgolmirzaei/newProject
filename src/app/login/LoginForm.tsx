@@ -4,10 +4,12 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { requestOtp, verifyOtp } from "@/actions/auth";
 import { Icon } from "@/components/Icon";
-import { faDigits, toLatinDigits } from "@/lib/text";
+import { toLatinDigits } from "@/lib/text";
+import { useI18n } from "@/components/LocaleProvider";
 
 export function LoginForm({ next }: { next: string }) {
   const router = useRouter();
+  const { t, f, lp } = useI18n();
   const [step, setStep] = useState<"phone" | "code">("phone");
   const [phone, setPhone] = useState("");
   const [masked, setMasked] = useState("");
@@ -20,8 +22,8 @@ export function LoginForm({ next }: { next: string }) {
 
   useEffect(() => {
     if (left <= 0) return;
-    const t = setTimeout(() => setLeft((s) => s - 1), 1000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setLeft((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
   }, [left]);
 
   function send() {
@@ -48,7 +50,7 @@ export function LoginForm({ next }: { next: string }) {
         inputs.current[0]?.focus();
         return;
       }
-      router.replace(r.data.to);
+      router.replace(lp(r.data.to));
       router.refresh();
     });
   }
@@ -75,11 +77,11 @@ export function LoginForm({ next }: { next: string }) {
     return (
       <form onSubmit={(e) => { e.preventDefault(); send(); }} className="stack gap-16">
         <div>
-          <h1>ورود پزشکان</h1>
-          <p className="sub">با شماره‌ی تلفن همراه وارد شوید یا حساب کاربری ایجاد کنید. کد تأیید از طریق پیامک ارسال می‌شود.</p>
+          <h1>{t("ورود پزشکان")}</h1>
+          <p className="sub">{t("با شماره‌ی تلفن همراه وارد شوید یا حساب کاربری ایجاد کنید. کد تأیید از طریق پیامک ارسال می‌شود.")}</p>
         </div>
         <div className="field">
-          <label htmlFor="phone">شماره‌ی موبایل</label>
+          <label htmlFor="phone">{t("شماره‌ی موبایل")}</label>
           <input
             id="phone"
             className="input input-ltr"
@@ -94,10 +96,10 @@ export function LoginForm({ next }: { next: string }) {
         </div>
         {error && <div className="alert alert-danger"><Icon name="alert" />{error}</div>}
         <button className="btn btn-primary btn-lg btn-block" disabled={pending || phone.replace(/\D/g, "").length < 10}>
-          {pending ? "در حال ارسال…" : "دریافت کد تأیید"}
+          {pending ? t("در حال ارسال…") : t("دریافت کد تأیید")}
         </button>
         <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.9 }}>
-          پس از ورود نخست، مشخصات پزشکی و شماره‌ی نظام خود را وارد می‌کنید. مدیر سامانه پس از بررسی، حساب را برای ثبت پاسخ و شرکت در بحث فعال می‌کند.
+          {t("پس از ورود نخست، مشخصات پزشکی و شماره‌ی نظام خود را وارد می‌کنید. مدیر سامانه پس از بررسی، حساب را برای ثبت پاسخ و شرکت در بحث فعال می‌کند.")}
         </p>
       </form>
     );
@@ -106,10 +108,10 @@ export function LoginForm({ next }: { next: string }) {
   return (
     <div className="stack gap-16">
       <div>
-        <h1>کد تأیید</h1>
-        <p className="sub">کد ۶ رقمی ارسال‌شده به <b className="ltr">{masked}</b> را وارد کنید.</p>
+        <h1>{t("کد تأیید")}</h1>
+        <p className="sub">{t("کد ۶ رقمی ارسال‌شده به {phone} را وارد کنید.", { phone: masked })}</p>
       </div>
-      {devCode && <div className="dev-code">حالت توسعه — کد: <b>{faDigits(devCode)}</b></div>}
+      {devCode && <div className="dev-code">{t("حالت توسعه — کد:")} <b>{f.digits(devCode)}</b></div>}
       <div className="otp" onPaste={(e) => { e.preventDefault(); setDigit(0, e.clipboardData.getData("text")); }}>
         {digits.map((d, i) => (
           <input
@@ -119,7 +121,7 @@ export function LoginForm({ next }: { next: string }) {
             inputMode="numeric"
             autoComplete={i === 0 ? "one-time-code" : "off"}
             maxLength={i === 0 ? 6 : 1}
-            aria-label={`رقم ${i + 1}`}
+            aria-label={t("رقم {n}", { n: i + 1 })}
             onChange={(e) => setDigit(i, e.target.value)}
             onKeyDown={(e) => { if (e.key === "Backspace" && !d && i > 0) inputs.current[i - 1]?.focus(); }}
             disabled={pending}
@@ -127,13 +129,13 @@ export function LoginForm({ next }: { next: string }) {
         ))}
       </div>
       {error && <div className="alert alert-danger"><Icon name="alert" />{error}</div>}
-      {pending && <p className="muted" style={{ textAlign: "center", fontSize: 14 }}>در حال بررسی…</p>}
+      {pending && <p className="muted" style={{ textAlign: "center", fontSize: 14 }}>{t("در حال بررسی…")}</p>}
       <div className="row" style={{ justifyContent: "space-between", fontSize: 14 }}>
-        <button className="btn btn-ghost btn-sm" onClick={() => { setStep("phone"); setError(""); }}>تغییر شماره</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => { setStep("phone"); setError(""); }}>{t("تغییر شماره")}</button>
         {left > 0 ? (
-          <span className="muted">ارسال دوباره تا {faDigits(left)} ثانیه</span>
+          <span className="muted">{t("ارسال دوباره تا {n} ثانیه", { n: f.digits(left) })}</span>
         ) : (
-          <button className="btn btn-ghost btn-sm" onClick={send} disabled={pending}>ارسال دوباره‌ی کد</button>
+          <button className="btn btn-ghost btn-sm" onClick={send} disabled={pending}>{t("ارسال دوباره‌ی کد")}</button>
         )}
       </div>
     </div>

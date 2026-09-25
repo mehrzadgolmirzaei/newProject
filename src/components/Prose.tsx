@@ -23,7 +23,7 @@ export function Prose({ text, className = "prose" }: { text: string; className?:
     <div className={className}>
       {blocks.map((b, i) =>
         b.type === "ul" ? (
-          <ul key={i}>{b.items.map((it, j) => <li key={j} dir="auto">{it}</li>)}</ul>
+          <ul key={i} dir="auto">{b.items.map((it, j) => <li key={j} dir="auto">{it}</li>)}</ul>
         ) : b.text ? (
           <p key={i} dir="auto" style={{ whiteSpace: "pre-line" }}>{b.text}</p>
         ) : null,

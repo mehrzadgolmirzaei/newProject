@@ -1,19 +1,21 @@
-import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { Prisma, UserStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { normalizeFa, toLatinDigits } from "@/lib/text";
-import { num } from "@/lib/format";
+import { getI18n } from "@/lib/i18n/server";
+import { privateMeta } from "@/lib/seo";
 import { UsersTable } from "@/components/admin/UsersTable";
 import { CreateUser } from "@/components/admin/CreateUser";
 import { Icon } from "@/components/Icon";
 
-export const metadata: Metadata = { title: "کاربران", robots: { index: false } };
+export const generateMetadata = () => privateMeta("کاربران");
 export const dynamic = "force-dynamic";
 
 export default async function Users({ searchParams }: { searchParams: Promise<{ status?: string; q?: string }> }) {
   const sp = await searchParams;
+  const { t, f, lp } = await getI18n();
+  const { num } = f;
   const me = await getUser();
   const status = (["PENDING", "ACTIVE", "SUSPENDED"] as const).find((s) => s === sp.status);
   const q = sp.q ? normalizeFa(sp.q) : "";
@@ -38,23 +40,23 @@ export default async function Users({ searchParams }: { searchParams: Promise<{ 
     <>
       <div className="dash-head">
         <div>
-          <h1>کاربران</h1>
-          <p>شماره‌ی نظام پزشکی را در سامانه‌ی نظام پزشکی بررسی کنید و سپس حساب را تأیید کنید. برای اجازه‌ی ثبت مورد، نقش «ارائه‌دهنده» بدهید.</p>
+          <h1>{t("کاربران")}</h1>
+          <p>{t("شماره‌ی نظام پزشکی را در سامانه‌ی نظام پزشکی بررسی کنید و سپس حساب را تأیید کنید. برای اجازه‌ی ثبت مورد، نقش «ارائه‌دهنده» بدهید.")}</p>
         </div>
       </div>
       <CreateUser />
       <div className="toolbar">
         <div className="seg">
-          <Link href="/admin/users" aria-current={!status}>همه</Link>
-          <Link href="/admin/users?status=PENDING" aria-current={status === "PENDING"}>در انتظار ({num(pendingReady)})</Link>
-          <Link href="/admin/users?status=ACTIVE" aria-current={status === "ACTIVE"}>فعال ({num(c.ACTIVE ?? 0)})</Link>
-          <Link href="/admin/users?status=SUSPENDED" aria-current={status === "SUSPENDED"}>معلق ({num(c.SUSPENDED ?? 0)})</Link>
+          <Link href="/admin/users" aria-current={!status}>{t("همه")}</Link>
+          <Link href="/admin/users?status=PENDING" aria-current={status === "PENDING"}>{t("در انتظار ({n})", { n: num(pendingReady) })}</Link>
+          <Link href="/admin/users?status=ACTIVE" aria-current={status === "ACTIVE"}>{t("فعال ({n})", { n: num(c.ACTIVE ?? 0) })}</Link>
+          <Link href="/admin/users?status=SUSPENDED" aria-current={status === "SUSPENDED"}>{t("معلق ({n})", { n: num(c.SUSPENDED ?? 0) })}</Link>
         </div>
         <span className="spacer" />
-        <form className="header-search" style={{ display: "flex" }}>
+        <form className="header-search" style={{ display: "flex" }} action={lp("/admin/users")}>
           <Icon name="search" size={16} />
           {status && <input type="hidden" name="status" value={status} />}
-          <input name="q" defaultValue={sp.q} placeholder="نام، نام کاربری یا شماره‌ی نظام" />
+          <input name="q" defaultValue={sp.q} placeholder={t("نام، نام کاربری یا شماره‌ی نظام")} />
         </form>
       </div>
       <UsersTable
