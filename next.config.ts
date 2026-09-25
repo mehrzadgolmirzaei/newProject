@@ -26,8 +26,13 @@ const csp = [
   "object-src 'none'",
 ].join("; ");
 
+// ساخت کم‌حافظه برای سرورهای build (مثلاً لیارا): بررسی TypeScript در build انجام نمی‌شود
+// (در توسعه با npm run typecheck انجام می‌شود) و تعداد پردازش‌های موازی محدود است.
+const lowMemBuild = process.env.LOW_MEMORY_BUILD === "1";
+
 const nextConfig: NextConfig = {
   output: "standalone",
+  ...(lowMemBuild ? { typescript: { ignoreBuildErrors: true }, experimental: { cpus: 1 } } : {}),
   poweredByHeader: false,
   serverExternalPackages: ["sharp", "@prisma/client"],
   async headers() {

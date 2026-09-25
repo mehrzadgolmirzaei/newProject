@@ -6,12 +6,12 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+RUN if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
 
 FROM deps AS build
 WORKDIR /app
 COPY . .
-ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_TELEMETRY_DISABLED=1 LOW_MEMORY_BUILD=1
 # متغیرهای ساختگی فقط برای عبور از اعتبارسنجی هنگام build؛ مقدار واقعی در زمان اجرا داده می‌شود
 RUN DATABASE_URL="postgresql://build:build@localhost:5432/build" npm run build
 # Prisma CLI با همه‌ی وابستگی‌هایش (برای migrate deploy در زمان اجرا)، هم‌نسخه با پروژه
