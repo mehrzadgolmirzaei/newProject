@@ -45,7 +45,7 @@ export function CreateUser() {
       <div className="grid-3">
         <div className="field">
           <label htmlFor="nu">نام کاربری</label>
-          <input id="nu" className="input input-ltr" autoComplete="off" value={f.username} onChange={(e) => setF({ ...f, username: e.target.value })} placeholder="dr.rahimi" />
+          <input id="nu" className="input input-ltr" autoComplete="off" value={f.username} onChange={(e) => setF({ ...f, username: e.target.value })} />
         </div>
         <div className="field">
           <label htmlFor="np">رمز عبور اولیه</label>

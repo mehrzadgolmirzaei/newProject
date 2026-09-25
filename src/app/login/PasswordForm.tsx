@@ -52,7 +52,7 @@ export function PasswordForm({ next, allowRegister }: { next: string; allowRegis
         <input
           id="username" className="input input-ltr" autoComplete="username" autoCapitalize="none" spellCheck={false}
           value={username} onChange={(e) => setUsername(e.target.value)} autoFocus aria-invalid={error?.field === "username"}
-          placeholder="dr.rahimi"
+         
         />
         {mode === "register" && <span className="hint">حروف لاتین کوچک، عدد، نقطه یا زیرخط؛ با حرف شروع شود.</span>}
       </div>
